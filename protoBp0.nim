@@ -1,6 +1,8 @@
 # run with
 #    nim compile --run -d:release protoBp0.nim 
 
+# version 10.1.2023
+
 import std/strformat
 import std/random
 import math
@@ -180,7 +182,13 @@ proc z*[
     var u0: Unit[layer0StimulusWidth] = Unit[layer0StimulusWidth]()
     u0.biasR = (1.0-r.rand(2.0))*0.8
     for iidx in 0..u0.r.len-1:
-      u0.r[iidx] = (1.0-r.rand(2.0))*0.8
+      let nFanIn = layer0StimulusWidth
+      let nFanOut = nUnitsPerLayer[1]
+      # see https://www.geeksforgeeks.org/weight-initialization-techniques-for-deep-neural-networks/
+      # He Uniform Initialization
+      let v: float64 = r.rand(-sqrt(1.0/float64(nFanIn))..sqrt(1.0/float64(nFanOut)))
+
+      u0.r[iidx] = v #(1.0-r.rand(2.0))*0.8
     
     layer0.units.add(u0)
 
