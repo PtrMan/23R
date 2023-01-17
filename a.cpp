@@ -9,17 +9,17 @@
 using namespace cv;
 
 
-
+extern void NimMain();
 extern void* visionSys0Create();
 
 
 
 int main()
 {
-    //NimMain(); // probably not necessary in C++
+    NimMain();
 
 
-    //void* visionSys = visionSys0Create();
+    void* visionSys = visionSys0Create();
 
     std::string image_path = samples::findFile("0.jpg");
     Mat img = imread(image_path, IMREAD_COLOR);
