@@ -8,9 +8,15 @@
 #include <iostream>
 using namespace cv;
 
+#include "visionSys0.h"
 
-extern void NimMain();
-extern void* visionSys0Create();
+//typedef double NF;
+//typedef void* tyObject_VisionSys0__69b9cVmnf9agBXMCdAtUelPgg;
+
+//extern void NimMain();
+//extern tyObject_VisionSys0__69b9cVmnf9agBXMCdAtUelPgg* visionSys0Create();
+//extern void* visionSys0process0Cpp(void*, tyArray__IIczo5sLgwcZFxbq8BbJzA, tyArray__IIczo5sLgwcZFxbq8BbJzA);
+//extern void visionSys0process0Cpp(tyObject_VisionSys0__69b9cVmnf9agBXMCdAtUelPgg*, NF*, NF*);
 
 
 
@@ -19,7 +25,7 @@ int main()
     NimMain();
 
 
-    void* visionSys = visionSys0Create();
+    tyObject_VisionSys0__69b9cVmnf9agBXMCdAtUelPgg* visionSys = visionSys0Create();
 
     std::string image_path = samples::findFile("0.jpg");
     Mat img = imread(image_path, IMREAD_COLOR);
@@ -46,7 +52,7 @@ int main()
             }
         }
 
-
+        visionSys0process0Cpp(visionSys, &arr[0], &arr[0]);
     }
 
 

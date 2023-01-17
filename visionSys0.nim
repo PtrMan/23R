@@ -24,7 +24,7 @@ const nUnitsPerLayer: seq[int] = @[12, WIDTHCATEGORY]
 
 
 type
-  VisionSys0Obj* = ref VisionSys0
+  VisionSys0Obj* {.exportc.} = ref VisionSys0
   VisionSys0* = object
     classifier0*: Classifier0[WIDTHCATEGORY]
 
@@ -128,7 +128,7 @@ proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: Matrix
 
 # C++ binding of vision processing
 # takes flat C arrays of the images
-proc visionSys0process0Cpp*(self: VisionSys0Obj, aArr: array[128*80, float64], bArr: array[128*80, float64]) {.exportcpp.} =
+proc visionSys0process0Cpp*(self: VisionSys0Obj, aArr: ptr UncheckedArray[float64], bArr: ptr UncheckedArray[float64]) {.exportc.} =
   # convert array back to matrix
   var am: MatrixArr[float64] = makeMatrixArr(128, 80, 0.0)
   block:
@@ -149,20 +149,3 @@ proc visionSys0process0Cpp*(self: VisionSys0Obj, aArr: array[128*80, float64], b
         iidx+=1
   
   visionSys0process0(self, am, bm)
-
-
-
-
-if isMainModule:
-
-
-  echo("FIN")
-
-
-
-# testing
-proc fib(a: cint): cint {.exportcpp.} =
-  if a <= 2:
-    result = 1
-  else:
-    result = fib(a - 1) + fib(a - 2)
