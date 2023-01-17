@@ -10,9 +10,18 @@ using namespace cv;
 
 
 
+extern void* visionSys0Create();
+
+
+
 int main()
 {
-    std::string image_path = samples::findFile("starry_night.jpg");
+    //NimMain(); // probably not necessary in C++
+
+
+    //void* visionSys = visionSys0Create();
+
+    std::string image_path = samples::findFile("0.jpg");
     Mat img = imread(image_path, IMREAD_COLOR);
     if(img.empty())
     {
@@ -43,9 +52,5 @@ int main()
 
     imshow("Display window", img);
     int k = waitKey(0); // Wait for a keystroke in the window
-    if(k == 's')
-    {
-        imwrite("starry_night.png", img);
-    }
     return 0;
 }

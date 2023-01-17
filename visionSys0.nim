@@ -32,7 +32,7 @@ type
     layer1: Layer[nUnitsPerLayer[0]]
 
 # PUBLIC interface    
-proc visionSys0Create*(): VisionSys0Obj =
+proc visionSys0Create*(): VisionSys0Obj {.exportcpp.} =
   var classifier0: Classifier0[WIDTHCATEGORY] = createClassifier0[WIDTHCATEGORY]()
   classifier0.classifierSimThreshold = 0.92
   classifier0.distMode = 1 # set to L2-norm based similarity
@@ -124,7 +124,31 @@ proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: Matrix
     # classify
     visionSys0classifyAndAdd(self, arr)
 
+
+
+# C++ binding of vision processing
+# takes flat C arrays of the images
+proc visionSys0process0Cpp*(self: VisionSys0Obj, aArr: array[128*80, float64], bArr: array[128*80, float64]) {.exportcpp.} =
+  # convert array back to matrix
+  var am: MatrixArr[float64] = makeMatrixArr(128, 80, 0.0)
+  block:
+    var iidx: int = 0
+    for iy in 0..am.h-1:
+      for ix in 0..am.w-1:
+        let v: float64 = aArr[iidx]
+        am.writeAtSafe(iy,ix,v)
+        iidx+=1
   
+  var bm: MatrixArr[float64] = makeMatrixArr(128, 80, 0.0)
+  block:
+    var iidx: int = 0
+    for iy in 0..bm.h-1:
+      for ix in 0..bm.w-1:
+        let v: float64 = bArr[iidx]
+        bm.writeAtSafe(iy,ix,v)
+        iidx+=1
+  
+  visionSys0process0(self, am, bm)
 
 
 
