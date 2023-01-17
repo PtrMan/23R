@@ -2,8 +2,8 @@ import std/tables
 import std/strformat
 
 import motion0
-import MatrixArr
-import Vec2
+import matrixArr
+import vec2
 
 # this file implements a service to retrieve areas where proto-object may be located by analyzing the motion between images
 

@@ -2,7 +2,7 @@
 
 import std/math
 
-import MatrixArr
+import matrixArr
 import vec2
 
 var motionVecSearchRectWidth*: int = 3 
