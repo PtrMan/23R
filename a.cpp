@@ -54,8 +54,11 @@ int main()
 
         
         // convert to grayscale
+        Mat imgGray2;
+        cv::cvtColor(img, imgGray2, cv::COLOR_BGR2GRAY);
         Mat imgGray;
-        cv::cvtColor(img, imgGray, cv::COLOR_BGR2GRAY);
+        cv::resize(imgGray2, imgGray, cv::Size(128, 80), cv::INTER_LINEAR); // size is (width, height)
+  
         
         if (currentImageNr==0) {
             imgGrayLast = imgGray;
