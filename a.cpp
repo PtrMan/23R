@@ -13,6 +13,8 @@
 using namespace cv;
 
 #include "visionSys0.h"
+extern char* outResStr0__vision83ys48_999;
+
 
 //typedef double NF;
 //typedef void* tyObject_VisionSys0__69b9cVmnf9agBXMCdAtUelPgg;
@@ -29,6 +31,20 @@ std::string convIntToStrLeadingZeros(int v, int width) {
     std::stringstream ss;
     ss << std::setw(width) << std::setfill('0') << v;
     return ss.str();
+}
+
+
+std::vector<std::string> split(const std::string &s, char delim) {
+    // see https://stackoverflow.com/a/46931770/388614
+    std::vector<std::string> result;
+    std::stringstream ss(s);
+    std::string item;
+
+    while (getline (ss, item, delim)) {
+        result.push_back (item);
+    }
+
+    return result;
 }
 
 
@@ -89,6 +105,17 @@ int main()
         
             convClassnWithRectsToStrCpp(visionSys); // convert classes to string
         }
+
+        { // take string containing the result from the vision system apart
+            char* outResStr0 = outResStr0__vision83ys48_999;
+
+            std::string outResStr1 = std::string(outResStr0);
+            std::vector<std::string> v0 = split(outResStr1, '\n');
+
+            // iterate to parse
+            // TODO
+        }
+
 
 
 
