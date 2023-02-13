@@ -7,7 +7,7 @@ sprite0 = sprite0.convert('RGBA')
 #img_w, img_h = img.size
 
 
-for itFrame in range(5):
+for itFrame in range(15):
     canvas = Image.new('RGBA', (128, 80), (0, 0, 0, 255))
     #bg_w, bg_h = canvas.size
     #offset = ((bg_w - img_w) // 2, (bg_h - img_h) // 2)
