@@ -86,7 +86,11 @@ int main()
 
         {
             visionSys0process0Cpp(visionSys, &arrCurrent[0], &arrLast[0]);
+        
+            convClassnWithRectsToStrCpp(visionSys); // convert classes to string
         }
+
+
 
 
         imshow("Display window", img);

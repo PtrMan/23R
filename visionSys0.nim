@@ -167,3 +167,13 @@ proc visionSys0process0Cpp*(self: VisionSys0Obj, aArr: ptr UncheckedArray[float6
         iidx+=1
   
   visionSys0process0(self, am, bm)
+
+
+
+proc convClassnWithRectsToStrCpp*(self: VisionSys0Obj) {.exportc.} =
+  var resStr: string = ""
+  
+  for iClassnWithRect in self.scratchpadClassificationsLastFrame:
+    resStr = resStr & &"{iClassnWithRect.rect.min.x},{iClassnWithRect.rect.min.y},{iClassnWithRect.rect.max.x},{iClassnWithRect.rect.max.y},{iClassnWithRect.class}\n"
+  
+  # TODO< set global variable >
