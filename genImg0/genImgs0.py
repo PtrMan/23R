@@ -11,7 +11,7 @@ for itFrame in range(15):
     canvas = Image.new('RGBA', (128, 80), (0, 0, 0, 255))
     #bg_w, bg_h = canvas.size
     #offset = ((bg_w - img_w) // 2, (bg_h - img_h) // 2)
-    offset = (10+int(itFrame*5), 10)
+    offset = (10+int(itFrame*5), 10+int(itFrame*3))
 
     resizedSprite = sprite0.resize((20,20))
     canvas.paste(resizedSprite, offset)
