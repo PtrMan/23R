@@ -24,12 +24,22 @@ const nUnitsPerLayer: seq[int] = @[12, WIDTHCATEGORY]
 
 
 type
+  ClassificationWithRectRef* = ref ClassificationWithRect
+  ClassificationWithRect* = object
+    rect*: ChangedAreaObj
+    class*: int
+
+
+type
   VisionSys0Obj* {.exportc.} = ref VisionSys0
   VisionSys0* = object
     classifier0*: Classifier0[WIDTHCATEGORY]
 
     layer0: Layer[layer0StimulusWidth]
     layer1: Layer[nUnitsPerLayer[0]]
+
+    # scratchpad of classifications of last frame
+    scratchpadClassificationsLastFrame: seq[ClassificationWithRectRef]
 
 # PUBLIC interface    
 proc visionSys0Create*(): VisionSys0Obj {.exportcpp.} =
@@ -109,6 +119,7 @@ proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: Matrix
   
 
   # now we crop the areas, scale the cropped areas to the right fixed size, and stuff these into the classifier
+  self.scratchpadClassificationsLastFrame = @[]
   for iArea in changedAreas:
     let croppedImg: MatrixArr[float64] = crop(bm, 0.0, iArea.min, iArea.max)
     let croppedImg2: MatrixArr[float64] = toSize(croppedImg, 0.0, 16)
@@ -123,6 +134,13 @@ proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: Matrix
     
     # classify
     visionSys0classifyAndAdd(self, arr)
+
+    var classification0: ClassificationWithRectRef
+    classification0.rect = iArea
+    classification0.class = 0 # TODO< implementme!!!! >
+    self.scratchpadClassificationsLastFrame.add(classification0)
+
+
 
 
 
