@@ -13,7 +13,7 @@
 using namespace cv;
 
 #include "visionSys0.h"
-extern char* outResStr0__vision83ys48_999;
+extern char* outResStr0__vision83ys48_1008;
 
 
 //typedef double NF;
@@ -60,7 +60,7 @@ int main()
 
     for(int currentImageNr=0; currentImageNr<100; currentImageNr++) {
         // read image
-        std::string image_path = samples::findFile(convIntToStrLeadingZeros(currentImageNr, 5)+".jpg");
+        std::string image_path = samples::findFile("./genImg0/"+convIntToStrLeadingZeros(currentImageNr, 5)+".png");
         Mat img = imread(image_path, IMREAD_COLOR);
         if(img.empty())
         {
@@ -106,21 +106,46 @@ int main()
             convClassnWithRectsToStrCpp(visionSys); // convert classes to string
         }
 
+        Mat dbgCanvas; // canvas for debugging
+        cv::cvtColor(imgGray, dbgCanvas, cv::COLOR_GRAY2BGR);
+
         { // take string containing the result from the vision system apart
-            char* outResStr0 = outResStr0__vision83ys48_999;
+            char* outResStr0 = outResStr0__vision83ys48_1008;
 
             std::string outResStr1 = std::string(outResStr0);
             std::vector<std::string> v0 = split(outResStr1, '\n');
 
             // iterate to parse
-            // TODO
+            for (std::string iLine : v0) {
+                std::cout << iLine << std::endl;
+
+                std::vector<std::string> v1 = split(iLine, ',');
+
+                std::string minxStr = v1[0];
+                std::string minyStr = v1[1];
+                std::string maxxStr = v1[2];
+                std::string maxyStr = v1[3];
+                std::string classStr = v1[4];
+
+                int minx = stoi(minxStr);
+                int miny = stoi(minyStr);
+                int maxx = stoi(maxxStr);
+                int maxy = stoi(maxyStr);
+                int class_ = stoi(classStr);
+
+                // TODO< draw to debug canvas >
+
+                cv::Rect rect(minx, miny, maxx-minx, maxy-miny);
+                cv::rectangle(dbgCanvas, rect, cv::Scalar(255, 0, 0));
+            }
         }
 
 
 
 
 
-        imshow("Display window", img);
+        //imshow("Display window", img);
+        imshow("Display window", dbgCanvas);
         int k = waitKey(0); // Wait for a keystroke in the window
 
         imgGrayLast = imgGray;

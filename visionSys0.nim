@@ -135,9 +135,7 @@ proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: Matrix
     # classify
     visionSys0classifyAndAdd(self, arr)
 
-    var classification0: ClassificationWithRectRef
-    classification0.rect = iArea
-    classification0.class = 0 # TODO< implementme!!!! >
+    var classification0: ClassificationWithRectRef = ClassificationWithRectRef(rect: iArea, class: 0)
     self.scratchpadClassificationsLastFrame.add(classification0)
 
 
