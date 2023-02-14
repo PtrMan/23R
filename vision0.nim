@@ -71,6 +71,9 @@ proc classify0*[s: static int](classifier: Classifier0, stimulus: array[s, float
 proc classify0AndAdd*[s: static int](classifier: var Classifier0, stimulus: array[s, float64]) =
   let classifyResult = classifier.classify0(stimulus)
 
+  echo(&"classify0AndAdd: cmp {classifyResult.sim} < {classifier.classifierSimThreshold}")
+  #echo(&"classify0AndAdd: ")
+
   if classifyResult.sim < classifier.classifierSimThreshold:
     # we need to create a new class and add it
     echo("create new class because below threshold")
@@ -78,6 +81,14 @@ proc classify0AndAdd*[s: static int](classifier: var Classifier0, stimulus: arra
     var createdProto: Prototype0Obj[s] = new (Prototype0[s])
     createdProto.v = stimulus
     classifier.prototypes.add(createdProto)
+
+    # sort by priority
+    # TODO
+
+    # limit memory to n prototypes
+    let nMaxPrototypes: int = 100
+    if classifier.prototypes.len > nMaxPrototypes:
+      classifier.prototypes = classifier.prototypes[0..nMaxPrototypes]
 
 
 

@@ -13,7 +13,7 @@
 using namespace cv;
 
 #include "visionSys0.h"
-extern char* outResStr0__vision83ys48_1019;
+extern char* outResStr0__vision83ys48_1061;
 
 
 //typedef double NF;
@@ -110,7 +110,7 @@ int main()
         cv::cvtColor(imgGray, dbgCanvas, cv::COLOR_GRAY2BGR);
 
         { // take string containing the result from the vision system apart
-            char* outResStr0 = outResStr0__vision83ys48_1019;
+            char* outResStr0 = outResStr0__vision83ys48_1061;
 
             std::string outResStr1 = std::string(outResStr0);
             std::vector<std::string> v0 = split(outResStr1, '\n');
