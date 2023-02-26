@@ -57,10 +57,17 @@ int main()
 
     Mat imgGrayLast;
 
+    bool isFirstFrame = true;
 
-    for(int currentImageNr=0; currentImageNr<100; currentImageNr++) {
+    for(int currentImageNr=1; currentImageNr<100; currentImageNr++) {
         // read image
-        std::string image_path = samples::findFile("./genImg0/"+convIntToStrLeadingZeros(currentImageNr, 5)+".png");
+
+        std::string filePath = "./genImg0/"+convIntToStrLeadingZeros(currentImageNr, 5)+".png";
+
+        // we want to load from streetscene
+        filePath = "./genImg1/"+convIntToStrLeadingZeros(currentImageNr, 5)+".jpg";
+
+        std::string image_path = samples::findFile(filePath);
         Mat img = imread(image_path, IMREAD_COLOR);
         if(img.empty())
         {
@@ -76,9 +83,10 @@ int main()
         cv::resize(imgGray2, imgGray, cv::Size(128, 80), cv::INTER_LINEAR); // size is (width, height)
   
         
-        if (currentImageNr==0) {
+        if (isFirstFrame) {
             imgGrayLast = imgGray;
         }
+        isFirstFrame = false;
 
         // read pixels
         // i is by column
