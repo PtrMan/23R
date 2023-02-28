@@ -117,6 +117,19 @@ proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: Matrix
   for iArea in changedAreas:
     echo(&"min=<{iArea.min.x} {iArea.min.y}> max=<{iArea.max.x} {iArea.max.y}>")
   
+  # filter by minimum extend
+  # 2.3.2023
+  block:
+    var changedAreas2: seq[ChangedAreaObj] = @[]
+    for iArea in changedAreas:
+      let extendWidth = iArea.max.x - iArea.min.x
+      let extendHeight = iArea.max.y - iArea.min.y
+      let extend = min(extendWidth, extendHeight)
+      if extend > 10:
+        changedAreas2.add(iArea)
+    
+    changedAreas = changedAreas2
+
 
   # now we crop the areas, scale the cropped areas to the right fixed size, and stuff these into the classifier
   self.scratchpadClassificationsLastFrame = @[]
