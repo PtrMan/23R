@@ -27,7 +27,7 @@ type
   ClassificationWithRectRef* = ref ClassificationWithRect
   ClassificationWithRect* = object
     rect*: ChangedAreaObj
-    class*: int
+    class*: int64
 
 
 type
@@ -44,7 +44,7 @@ type
 # PUBLIC interface    
 proc visionSys0Create*(): VisionSys0Obj {.exportcpp.} =
   var classifier0: Classifier0[WIDTHCATEGORY] = createClassifier0[WIDTHCATEGORY]()
-  classifier0.classifierSimThreshold = 0.92
+  classifier0.classifierSimThreshold = 0.65
   classifier0.distMode = 1 # set to L2-norm based similarity
 
 
@@ -94,14 +94,14 @@ proc visionSys0Create*(): VisionSys0Obj {.exportcpp.} =
 
 # helper
 # classify a image of the right size
-proc visionSys0classifyAndAdd*(self: VisionSys0Obj, rawDat:seq[float64]) =
+proc visionSys0classifyAndAdd*(self: VisionSys0Obj, rawDat:seq[float64]): Prototype0Obj[WIDTHCATEGORY] =
   let rawImg: seq[float64] = convRawImgDatToRawDat(rawDat)
 
   var nnOutRealAArr: array[WIDTHCATEGORY, float64]
   for iidx in 0..nnOutRealAArr.len-1:
     nnOutRealAArr[iidx] = rawImg[iidx]
 
-  self.classifier0.classify0AndAdd(nnOutRealAArr)
+  return self.classifier0.classify0AndAdd(nnOutRealAArr)
 
 # PUBLIC interface
 # processes a new image girven the old image
@@ -146,9 +146,9 @@ proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: Matrix
         arr.add(v)
     
     # classify
-    visionSys0classifyAndAdd(self, arr)
+    let classifiedProto = visionSys0classifyAndAdd(self, arr)
 
-    var classification0: ClassificationWithRectRef = ClassificationWithRectRef(rect: iArea, class: 0)
+    var classification0: ClassificationWithRectRef = ClassificationWithRectRef(rect: iArea, class: classifiedProto.uniqueId)
     self.scratchpadClassificationsLastFrame.add(classification0)
 
 

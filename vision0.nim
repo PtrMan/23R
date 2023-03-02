@@ -21,7 +21,8 @@ import vec
 
 type
   Prototype0*[s: static int] = object
-    v: array[s, float64]
+    v*: array[s, float64]
+    uniqueId*: int64
 
 type
   Prototype0Obj*[s: static int] = ref Prototype0[s]
@@ -37,6 +38,8 @@ type
 
     classifierSimThreshold*: float64
     distMode*: int
+
+    uniqueIdCounter: int64
 
 proc createClassifier0*[s: static int](): Classifier0[s] =
   var res: Classifier0[s]
@@ -68,7 +71,7 @@ proc classify0*[s: static int](classifier: Classifier0, stimulus: array[s, float
   return best
 
 # classify and add if below threshold
-proc classify0AndAdd*[s: static int](classifier: var Classifier0, stimulus: array[s, float64]) =
+proc classify0AndAdd*[s: static int](classifier: var Classifier0, stimulus: array[s, float64]): Prototype0Obj[s] =
   let classifyResult = classifier.classify0(stimulus)
 
   echo(&"classify0AndAdd: cmp {classifyResult.sim} < {classifier.classifierSimThreshold}")
@@ -80,6 +83,8 @@ proc classify0AndAdd*[s: static int](classifier: var Classifier0, stimulus: arra
 
     var createdProto: Prototype0Obj[s] = new (Prototype0[s])
     createdProto.v = stimulus
+    createdProto.uniqueId = classifier.uniqueIdCounter
+    classifier.uniqueIdCounter = classifier.uniqueIdCounter+1
     classifier.prototypes.add(createdProto)
 
     # sort by priority
@@ -89,6 +94,10 @@ proc classify0AndAdd*[s: static int](classifier: var Classifier0, stimulus: arra
     let nMaxPrototypes: int = 100
     if classifier.prototypes.len > nMaxPrototypes:
       classifier.prototypes = classifier.prototypes[0..nMaxPrototypes]
+    
+    return createdProto
+  
+  return classifyResult.bestProto
 
 
 
