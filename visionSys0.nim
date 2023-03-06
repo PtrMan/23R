@@ -41,6 +41,10 @@ type
     # scratchpad of classifications of last frame
     scratchpadClassificationsLastFrame: seq[ClassificationWithRectRef]
 
+    # statistics
+    statsCreatedNewCategory*: int64
+    statsRecognized*: int64
+
 # PUBLIC interface    
 proc visionSys0Create*(): VisionSys0Obj {.exportcpp.} =
   var classifier0: Classifier0[WIDTHCATEGORY] = createClassifier0[WIDTHCATEGORY]()
@@ -101,7 +105,15 @@ proc visionSys0classifyAndAdd*(self: VisionSys0Obj, rawDat:seq[float64]): Protot
   for iidx in 0..nnOutRealAArr.len-1:
     nnOutRealAArr[iidx] = rawImg[iidx]
 
-  return self.classifier0.classify0AndAdd(nnOutRealAArr)
+  let res0 = self.classifier0.classify0AndAdd(nnOutRealAArr)
+
+  # statistics
+  if res0.createdNewCategory:
+    self.statsCreatedNewCategory+=1
+  else:
+    self.statsRecognized+=1
+
+  return res0.proto
 
 # PUBLIC interface
 # processes a new image girven the old image
@@ -153,7 +165,8 @@ proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: Matrix
 
 
 
-
+var outStatsCreatedNewCategory*: int64
+var outStatsRecognized*: int64
 
 # C++ binding of vision processing
 # takes flat C arrays of the images
@@ -178,6 +191,10 @@ proc visionSys0process0Cpp*(self: VisionSys0Obj, aArr: ptr UncheckedArray[float6
         iidx+=1
   
   visionSys0process0(self, am, bm)
+
+  # update global vars for statistics
+  outStatsCreatedNewCategory = self.statsCreatedNewCategory
+  outStatsRecognized = self.statsRecognized
 
 var outResStr0*: cstring
 

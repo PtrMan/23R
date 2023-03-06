@@ -71,7 +71,8 @@ proc classify0*[s: static int](classifier: Classifier0, stimulus: array[s, float
   return best
 
 # classify and add if below threshold
-proc classify0AndAdd*[s: static int](classifier: var Classifier0, stimulus: array[s, float64]): Prototype0Obj[s] =
+# /return createdNewCategory: was a new category created for this?
+proc classify0AndAdd*[s: static int](classifier: var Classifier0, stimulus: array[s, float64]): tuple[proto:Prototype0Obj[s], createdNewCategory:bool] =
   let classifyResult = classifier.classify0(stimulus)
 
   echo(&"classify0AndAdd: cmp {classifyResult.sim} < {classifier.classifierSimThreshold}")
@@ -95,9 +96,9 @@ proc classify0AndAdd*[s: static int](classifier: var Classifier0, stimulus: arra
     if classifier.prototypes.len > nMaxPrototypes:
       classifier.prototypes = classifier.prototypes[0..nMaxPrototypes]
     
-    return createdProto
+    return (createdProto, true)
   
-  return classifyResult.bestProto
+  return (classifyResult.bestProto, false)
 
 
 

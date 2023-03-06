@@ -13,7 +13,9 @@
 using namespace cv;
 
 #include "visionSys0.h"
-extern char* outResStr0__vision83ys48_1105;
+extern char* outResStr0__vision83ys48_1149;
+extern NI64 outStatsCreatedNewCategory__vision83ys48_1039;
+extern NI64 outStatsRecognized__vision83ys48_1040;
 
 
 //typedef double NF;
@@ -59,7 +61,7 @@ int main()
 
     bool isFirstFrame = true;
 
-    for(int currentImageNr=1; currentImageNr<100; currentImageNr++) {
+    for(int currentImageNr=1; true; currentImageNr++) {
         // read image
 
         std::string filePath = "./genImg0/"+convIntToStrLeadingZeros(currentImageNr, 5)+".png";
@@ -110,6 +112,10 @@ int main()
 
         {
             visionSys0process0Cpp(visionSys, &arrCurrent[0], &arrLast[0]);
+
+            std::cout << "" << std::endl;
+            std::cout << "DBG: stats: createdNewCategory="<<outStatsCreatedNewCategory__vision83ys48_1039 << std::endl;
+            std::cout << "DBG: stats: recognized        ="<<outStatsRecognized__vision83ys48_1040 << std::endl;
         
             convClassnWithRectsToStrCpp(visionSys); // convert classes to string
         }
@@ -118,7 +124,7 @@ int main()
         cv::cvtColor(imgGray, dbgCanvas, cv::COLOR_GRAY2BGR);
 
         { // take string containing the result from the vision system apart
-            char* outResStr0 = outResStr0__vision83ys48_1105;
+            char* outResStr0 = outResStr0__vision83ys48_1149;
 
             std::string outResStr1 = std::string(outResStr0);
             std::vector<std::string> v0 = split(outResStr1, '\n');
