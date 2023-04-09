@@ -13,6 +13,3 @@ This is a repo for a reasoner and a vision system. Currently only the vision sys
 * modify path to Nim lib in ./build.sh
 * run `./build.sh`
 
-### Planned:
-
-* NARS based reasoner
