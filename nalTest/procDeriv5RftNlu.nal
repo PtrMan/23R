@@ -1,0 +1,55 @@
+// try of NLU with RFT/aquired relation
+
+
+// will be translated to "aquired relation" <(Tom*are*fat)-->(a0*a1*a2)>. when Z0 is realized
+// comments because for testing
+//<(<Tom --> a0>, <are --> a1>, <fat --> a2>, <({SELF}*dummy0) --> ^op0>) =/> Z0>.
+<(<Tom --> a0>, <are --> a1>, <%%0 --> a2>, <({SELF}*dummy0) --> ^op0>) =/> Z0>.
+//<(<%%0 --> a2>, <({SELF}*dummy0) --> ^op0>) =/> Z0>.
+//<(%%0, <({SELF}*dummy0) --> ^op0>) =/> Z0>.
+
+
+<Tom --> a0>. :|:
+!sp
+<are --> a1>. :|:
+!sp
+<fat --> a2>. :|:
+
+
+!sp
+!sp
+!sp
+!sp
+!sp
+!sp
+
+!sp
+!sp
+!sp
+!sp
+!sp
+!sp
+
+
+
+Z0! :|:
+// ... |- <(Tom*are*fat)-->(a0*a1*a2)>.
+
+!sp
+!sp
+!sp
+!sp
+!sp
+!sp
+
+!sp
+!sp
+!sp
+!sp
+!sp
+!sp
+
+//expectExeced <({SELF}*dummy0) --> ^op0>
+
+// debug
+!sm

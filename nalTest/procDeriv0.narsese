@@ -1,0 +1,44 @@
+// test to make sure that the procedural deriver does derive necessary derivations
+
+a. :|:
+!sp
+!sp
+
+b. :|:
+!sp
+!sp
+
+<({SELF}*dummy0) --> ^op0>. :|:
+!sp
+!sp
+
+z. :|:
+!sp
+!sp
+
+!sp
+!sp
+!sp
+!sp
+!sp
+
+!sp
+!sp
+!sp
+!sp
+!sp
+
+!sp
+!sp
+!sp
+!sp
+!sp
+
+
+//expectDeriv (a,b). {1.0 0.8464}
+
+
+////expectDeriv <(b,<({SELF}*dummy0) --> ^op0>) =\> z>.
+
+//expectDeriv <(a,b,<({SELF}*dummy0) --> ^op0>) =/> z>. {1.0 0.4173828352220695}
+

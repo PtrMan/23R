@@ -1,0 +1,22 @@
+a. :|:
+!sp
+b. :|:
+!sp
+!sp
+!sp
+!sp
+!sp
+
+<(a, b, <({SELF}*dummy0) --> ^op0>) =/> Z>.
+
+!sp
+Z! :|:
+
+!sp
+!sp
+!sp
+!sp
+!sp
+
+//expectExeced <({SELF}*dummy0) --> ^op0>
+

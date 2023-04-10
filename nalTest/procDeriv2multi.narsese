@@ -1,0 +1,23 @@
+// simple test for procedurally driven derivations
+
+<a --> b>. :|:
+!sp
+<b --> c>. :|:
+!sp
+<({SELF}*dummy0) --> ^op0>. :|:
+!sp
+Z. :|:
+
+!sp
+!sp
+!sp
+!sp
+!sp
+
+
+
+// commented because not necessary for now!
+////expectDeriv <a --> c>. {1.0 0.8464}
+
+//expectDeriv <(<a --> c>,<({SELF}*dummy0) --> ^op0>) =/> Z>. {1.0 0.4173828352220695}
+

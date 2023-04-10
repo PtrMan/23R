@@ -1,0 +1,27 @@
+// test if correct image and product is derived when input is posed as an event
+
+<(a * b) --> c>. :|:
+
+<({SELF}*dummy0) --> ^op0>. :|:
+!sp
+!sp
+
+z. :|:
+!sp
+!sp
+
+!sp
+!sp
+!sp
+!sp
+!sp
+
+!sp
+!sp
+!sp
+!sp
+!sp
+
+//expectDeriv <(/ c _ b) --> a>. {1.0 0.92}
+//expectDeriv <(/ c a _) --> b>. {1.0 0.92}
+//expectDeriv <(a*b) --> c>. {1.0 0.92}

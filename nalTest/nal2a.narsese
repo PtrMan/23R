@@ -1,0 +1,44 @@
+// fundamental NAL-2 rules
+
+<e --> f>.
+<f --> g>.
+
+5
+
+//expectDeriv <e --> g>. {1.0 0.8464}
+
+
+
+<y --> c>.
+<y --> d>.
+
+5
+
+//expectDeriv <d --> c>. {1.0 0.4584055459272097}
+//expectDeriv <c --> d>. {1.0 0.4584055459272097}
+
+// comp
+///expectDeriv <d <-> c>. {1.0 0.4584055459272097}
+///expectDeriv <c <-> d>. {1.0 0.4584055459272097}
+
+
+
+<a --> z>.
+<b --> z>.
+
+5
+
+//expectDeriv <a --> b>. {1.0 0.4584055459272097}
+//expectDeriv <b --> a>. {1.0 0.4584055459272097}
+
+
+
+
+// commented because not implemented
+// revision
+//<ptr0x557d --> ptr0x55>.
+//<ptr0x557d --> ptr0x55>.
+//
+//5
+
+

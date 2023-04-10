@@ -1,0 +1,13 @@
+// simple test for execution of op
+
+<(E0, <({SELF}*dummy0) --> ^op0>) =/> G0>.
+
+E0. :|:
+!sp
+G0! :|:
+
+!sp
+!sp
+!sp
+!sp
+!sp
