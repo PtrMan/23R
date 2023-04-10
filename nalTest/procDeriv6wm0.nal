@@ -1,0 +1,20 @@
+// test for requirement of inference for realizing working memory
+
+<(<%%0-->X>, <({SELF}*%%0) --> ^op0>) =/> Z0>.
+
+<A --> X>. :|:
+!sp
+
+Z0! :|:
+
+!sp
+!sp
+!sp
+!sp
+!sp
+!sp
+!sp
+
+
+//expectExeced <({SELF}*A) --> ^op0>
+

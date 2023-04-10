@@ -267,8 +267,16 @@ proc tokenize*(str:string): seq[Token0Obj] =
       acc="#"
       continue
 
+    if iChar == '-':
+      if acc=="-": # -->
+        discard
+      else:
+        # special handling to parse <%%0-->X>   etc.
+        flush()
+        acc="-"
+        continue
 
-    if iChar == '>':
+    elif iChar == '>':
       if acc == "--":
         tokens.add(Token0Obj(type0:copinh, depth:0))
         acc=""
@@ -312,3 +320,5 @@ proc tokenize*(str:string): seq[Token0Obj] =
 
   flush()
   return tokens
+
+# TODO< use regular expressions in tokenizer!!! >
