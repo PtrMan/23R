@@ -5,7 +5,7 @@ It is a agent with true autonomy :robot:🧠, it deals with situations in realti
 
 This project consists out of the intelligent "core" and comes with a vision subsystem. This repository doesn't come pre-packaged with other tooling/subsystems.
 
-The vision subsystem (which isn't integrated/used yet) also works in realtime, it also learns lifelong and incrementally. See in ./moduleVision/README.md for a README dedicated to the vision system.
+The vision subsystem (which isn't integrated/used yet) also works in realtime, it also learns lifelong and incrementally. See in https://github.com/PtrMan/23R/tree/main/moduleVision for the vision system which is dedicated to vision.
 
 
 ### How to run?
