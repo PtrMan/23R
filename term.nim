@@ -163,7 +163,7 @@ proc termEq*(a: TermObj, b: TermObj): bool =
 
 
 
-proc hash(t: TermObj): Hash =
+proc hash*(t: TermObj): Hash =
   case t.type0
   of name:
     return hash(t.name)

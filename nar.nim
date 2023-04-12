@@ -235,22 +235,58 @@ proc putPredImpl(c: ConceptObj, s: SentenceObj) =
 type
   MemObj* = ref Mem
   Mem* = object
-    # FIXME< add hashtable by name of concept! >
-    concepts*: seq[ConceptObj]
+    #concepts*: seq[ConceptObj] # OLD
+    conceptsByName*: Table[TermObj, ConceptObj]
+
+    capacityConcepts*: int # PARAM
+# initTable[TermObj, ConceptObj]()
+
+
+
+proc compareConcept(p1, p2: ConceptObj): int  =
+  # TODO< implement me! >
+  
+  #if p1.x < p2.x:
+  #  return -1
+  return 0
+
+proc memGc*(mem: MemObj) =
+
+  if mem.conceptsByName.len > mem.capacityConcepts:
+    var z: seq[ConceptObj] = @[]
+    
+    for iKey in mem.conceptsByName.keys:
+      z.add(mem.conceptsByName[iKey])
+
+    # * sort
+    sort(z, compareConcept)
+
+    # * limit
+    z = z[0..mem.capacityConcepts]
+
+    mem.conceptsByName.clear()
+    for iv in z:
+      mem.conceptsByName[iv.name] = iv
+
+
 
 # lookup concept by name
 proc memLookupConceptByName(mem: MemObj, name: TermObj): ConceptObj =
-  for iConcept in mem.concepts:
-    #dbg   echo(&"cmp {convTermToStr(iConcept.name)} with {convTermToStr(name)}<")
-    if termEq(iConcept.name, name):
-      return iConcept
+  if name in mem.conceptsByName:
+    return mem.conceptsByName[name]
+  #for iConcept in mem.concepts:
+  #  #dbg   echo(&"cmp {convTermToStr(iConcept.name)} with {convTermToStr(name)}<")
+  #  if termEq(iConcept.name, name):
+  #    return iConcept
   return nil
 
 proc retNumberOfConcept*(mem: MemObj): int =
-  return mem.concepts.len
+  ##return mem.concepts.len
+  return mem.conceptsByName.len
 
 proc reset*(mem: MemObj) =
-  mem.concepts = @[]
+  #mem.concepts = @[]
+  mem.conceptsByName.clear()
 
 
 
@@ -317,7 +353,7 @@ var CONCEPTBELIEFMAXN = 15 # capacity of beliefs per concept
 # (only call if the concept doesnt exist!)
 proc createConcept(mem: MemObj, name: TermObj): ConceptObj =
   let concept1: ConceptObj = ConceptObj(name:name, content:AikrArr[SentenceObj](maxLen:CONCEPTBELIEFMAXN))
-  mem.concepts.add(concept1)
+  mem.conceptsByName[name] = concept1
   return concept1
 
 # add or revise in memory
@@ -1843,6 +1879,9 @@ proc proceduralKeepUnderAikrCollector() =
   if (globalNarInstance.currentTime mod 50) == 0:
     discard
     # TODO< keep globalNarInstance.eventsByOccTime under bound >
+
+    memGc(globalNarInstance.mem)
+    memGc(globalNarInstance.goalMem)
 
 # retrieve events in a time-range
 proc collectEventsInOccRange*(minOccTime: int64, maxOccTime: int64): seq[EventObj] =
@@ -3645,7 +3684,8 @@ proc proceduralAdvanceTime*(dt:int64) =
 # used for debugging
 proc proceduralShowAllBeliefs*(memoryTypeTxt: string) =
   echo(&"concepts of {memoryTypeTxt}:")
-  for iConcept in globalNarInstance.mem.concepts:
+  for iConceptName in globalNarInstance.mem.conceptsByName.keys:
+    let iConcept: ConceptObj = globalNarInstance.mem.conceptsByName[iConceptName]
     echo(&"concept name={convTermToStr(iConcept.name)}")
     for iBelief in iConcept.content.content:
       echo(&"   content={convSentenceToStr(iBelief)}")
@@ -3675,13 +3715,14 @@ proc narInit*() =
 
   globalNarInstance.eventsByOccTime = initTable[int64, seq[EventObj]]()
 
-  let mem = MemObj(concepts: @[])
+  let capacityConcepts: int = 300
+  let mem = MemObj(conceptsByName: initTable[TermObj, ConceptObj](), capacityConcepts:capacityConcepts)
   globalNarInstance.mem = mem
 
   goaldrivenCtrlCtx.mem = mem
 
 
-  globalNarInstance.goalMem = MemObj(concepts: @[])
+  globalNarInstance.goalMem = MemObj(conceptsByName: initTable[TermObj, ConceptObj](), capacityConcepts:capacityConcepts)
 
   globalNarInstance.allGoalsByDepth = @[]
   globalNarInstance.allGoalsByDepth.add(GoalsWithSameDepthObj())
@@ -4255,8 +4296,12 @@ if false: # manual test for 'perception layer'
 
 
 
-# HALFDONE 15.1.2023  inference: add A., A==>B. |- B. rule  and call rule in deriver
-#      TODO< test it with nal test file! >
+# DONE 15.1.2023  inference: add A., A==>B. |- B. rule  and call rule in deriver
+#      DONE< test it with nal test file! >
+
+
+
+
 
 
 
