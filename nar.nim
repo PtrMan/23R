@@ -242,31 +242,37 @@ type
 # initTable[TermObj, ConceptObj]()
 
 
-
-proc compareConcept(p1, p2: ConceptObj): int  =
-  # TODO< implement me! >
-  
-  #if p1.x < p2.x:
-  #  return -1
-  return 0
+# helper to compare priority of concepts
+proc compareMemGc(a, b: tuple[c:ConceptObj, worth:float64]): int  =
+  return cmp(a.worth, b.worth)
 
 proc memGc*(mem: MemObj) =
 
   if mem.conceptsByName.len > mem.capacityConcepts:
-    var z: seq[ConceptObj] = @[]
-    
+    #var z: seq[ConceptObj] = @[]
+    var z: seq[tuple[c:ConceptObj, worth:float64]] = @[]
+
     for iKey in mem.conceptsByName.keys:
-      z.add(mem.conceptsByName[iKey])
+      var tuple0: tuple[c:ConceptObj, worth:float64]
+      tuple0.c = mem.conceptsByName[iKey]
+
+      var worth: float64 = 0.0
+      for iBelief in tuple0.c.content.content:
+        worth = max(calcExp(iBelief.tv), worth)
+      for iBelief in tuple0.c.contentProcedural.content:
+        worth = max(calcExp(iBelief.tv), worth)
+
+      z.add(tuple0)
 
     # * sort
-    sort(z, compareConcept)
+    sort(z, compareMemGc)
 
     # * limit
     z = z[0..mem.capacityConcepts]
 
     mem.conceptsByName.clear()
     for iv in z:
-      mem.conceptsByName[iv.name] = iv
+      mem.conceptsByName[iv.c.name] = iv.c
 
 
 
