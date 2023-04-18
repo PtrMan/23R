@@ -26,6 +26,11 @@ proc calcMotionMatrix2*(am: MatrixArr[float64], bm: MatrixArr[float64]): MatrixA
   return calcMotionMatrix(am, bm)
 
 
+# helper
+proc push[X](arr: var seq[X], v: X) =
+  arr.add(v)
+
+
 # groups pixels which have roughtly the same motion to the same groups (called "ChangedAreaObj")
 proc calcChangedAreas*(motionMap: MatrixArr[Vec2[int]]): seq[ChangedAreaObj] =
   # TODO SCIFI LATER< use a NN to compute set of "ChangedAreaObj" we return. This has the advantage that it can take care of parallax motion and other "weird" motion types which are either hard or impossible to handle with handcrafted code >
@@ -61,16 +66,21 @@ proc calcChangedAreas*(motionMap: MatrixArr[Vec2[int]]): seq[ChangedAreaObj] =
 
 
   # * group by coloring algorithm
-  proc boundaryFill(posx:int, posy:int, boundaryColor:int, fillColor:int, img: var MatrixArr[int]) =
+  proc boundaryFill(posX: int, posY: int, boundaryColor: int, fillColor: int, img: var MatrixArr[int]) =
     # https://www.freecodecamp.org/news/boundary-fill-algorithm-pixel-filling-squares/
-    let col: int = img.atSafe(posy,posx,0)
-    if col != fillColor and col != boundaryColor: # if pixel not already filled or part of the boundary
-      img.writeAtSafe(posy, posx, fillcolor)
-      boundaryFill(posx + 1, posy,boundaryColor,fillColor, img)
-      boundaryFill(posx - 1, posy,boundaryColor,fillColor, img)
-      boundaryFill(posx, posy + 1,boundaryColor,fillColor, img)
-      boundaryFill(posx, posy - 1,boundaryColor,fillColor, img)
-  
+    var stack: seq[Vec2[int]] = @[] # stack of invocations to fill
+    stack.push(Vec2[int](x:posX, y:posY))
+    
+    while stack.len > 0:
+      let top: Vec2[int] = stack.pop()
+      let col: int = img.atSafe(top.y, top.x, 0)
+      if col != fillColor and col != boundaryColor: # if pixel not already filled or part of the boundary
+        img.writeAtSafe(top.y, top.x, fillcolor)
+        stack.push(Vec2[int](x:top.x + 1, y:top.y))
+        stack.push(Vec2[int](x:top.x - 1, y:top.y))
+        stack.push(Vec2[int](x:top.x, y:top.y + 1))
+        stack.push(Vec2[int](x:top.x, y:top.y - 1))
+
   # FIXME< extremely inefficient hacky algorithm to get unique colors! >
   for iy in 0..motionMap.h-1:
     for ix in 0..motionMap.w-1:
