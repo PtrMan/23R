@@ -1,5 +1,6 @@
 import std/tables
 import std/strformat
+from std/math import sqrt
 
 import motion0
 import matrixArr
@@ -31,10 +32,88 @@ proc push[X](arr: var seq[X], v: X) =
   arr.add(v)
 
 
+# helper
+func scale(v: Vec2[float], s: float): Vec2[float] =
+  return Vec2[float](x:v.x*s,y:v.y*s)
+func add(a: Vec2[float], b: Vec2[float]): Vec2[float] =
+  return Vec2[float](x:a.x+b.x,y:a.y+b.y)
+
 # groups pixels which have roughtly the same motion to the same groups (called "ChangedAreaObj")
-proc calcChangedAreas*(motionMap: MatrixArr[Vec2[int]]): seq[ChangedAreaObj] =
+proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj] =
   # TODO SCIFI LATER< use a NN to compute set of "ChangedAreaObj" we return. This has the advantage that it can take care of parallax motion and other "weird" motion types which are either hard or impossible to handle with handcrafted code >
   
+
+  # new spinglass/firefly inspired algorithm to even out motion
+  var selSpinglassAlgorithm: string = "spinglass" # which algorithm is selected as the spinglass algoirthm? "spinglass" for spinglass-inspired algorthm, "" for doing nothing in this step
+  if selSpinglassAlgorithm == "spinglass":
+    # compute how much the two motion vectors are "coupled"
+    func calcCouplingFactor(a: Vec2[float], b: Vec2[float]): float =
+      # calc dot product
+      let dotRes: float = a.x*b.x + a.y*b.y
+
+      let dirCouplingVal: float = (dotRes - 0.8) * (1.0 / (1.0 - 0.8))
+
+      if dirCouplingVal < 0.0:
+        return 0.0 # not the same direction thus they are not coupled
+
+      # calculate same velocity-ness
+      let diffX: float = a.x - b.x
+      let diffY: float = a.y - b.y
+      let len2: float = sqrt(diffX*diffX + diffY*diffY)
+
+      let velCoupling: float = max(1.0 - len2, 0.0)
+
+      return dirCouplingVal*velCoupling
+
+
+    var m: MatrixArr[Vec2[float]] = makeMatrixArr(motionMap.w, motionMap.h, Vec2[float](x:0.0,y:0.0)) # matrix with field of motion vectors
+    # fill
+    for iy in 0..<motionMap.h:
+      for ix in 0..<motionMap.w:
+        let zx: float = float(motionMap.atUnsafe(iy, ix).x)
+        let zy: float = float(motionMap.atUnsafe(iy, ix).y)
+        m.writeAtSafe(iy, ix, Vec2[float](x:zx,y:zy))
+
+    for iStep in 0..<5:
+      var m2: MatrixArr[Vec2[float]] = makeMatrixArr(motionMap.w, motionMap.h, Vec2[float](x:0.0,y:0.0)) # next matrix
+
+      for iy in 1..<m.h-1:
+        for ix in 1..<m.w-1:
+          let thisDir: Vec2[float] = atUnsafe(m, iy, ix)
+        
+          let l: Vec2[float] = atUnsafe(m, iy, ix-1) # left
+          let r: Vec2[float] = atUnsafe(m, iy, ix+1) # right
+          let t: Vec2[float] = atUnsafe(m, iy-1, ix) # top
+          let b: Vec2[float] = atUnsafe(m, iy+1, ix) # bottom
+        
+          # compute couplings, inspired by spinglass / firefly algorithm
+          let couplingFactorL: float = calcCouplingFactor(thisDir, l)
+          let couplingFactorR: float = calcCouplingFactor(thisDir, r)
+          let couplingFactorT: float = calcCouplingFactor(thisDir, t)
+          let couplingFactorB: float = calcCouplingFactor(thisDir, b)
+        
+          # transfer by coupling
+          var thisAccu: Vec2[float] = thisDir
+          thisAccu = add(thisAccu, scale(l, couplingFactorL))
+          thisAccu = add(thisAccu, scale(r, couplingFactorR))
+          thisAccu = add(thisAccu, scale(t, couplingFactorT))
+          thisAccu = add(thisAccu, scale(b, couplingFactorB))
+          thisAccu = scale(thisAccu, 1.0/(1.0+couplingFactorL+couplingFactorR+couplingFactorT+couplingFactorB)) # 'normalize' while preserving scale
+          m2.writeAtSafe(iy, ix, thisAccu)
+
+      m = m2 # swap
+    
+    # convert back to integer motion vectors
+    # FIXME< this is unnecessary, the algorithm to find equal motion should work with floating point vectors anyways! >
+    for iy in 0..<motionMap.h:
+      for ix in 0..<motionMap.w:
+        let zx: int = int(m.atUnsafe(iy, ix).x)
+        let zy: int = int(m.atUnsafe(iy, ix).y)
+        motionMap.writeAtSafe(iy, ix, Vec2[int](x:zx,y:zy))
+
+
+
+
   
 
   # * classify motion based on vector
@@ -92,7 +171,8 @@ proc calcChangedAreas*(motionMap: MatrixArr[Vec2[int]]): seq[ChangedAreaObj] =
         boundaryFill(ix,iy,0,itcol,quadrants[2])
         boundaryFill(ix,iy,0,itcol,quadrants[3])
 
-  
+
+
 
   # * compose groups
   var regionByColor: Table[int, ChangedAreaObj] = initTable[int, ChangedAreaObj]()
@@ -120,7 +200,7 @@ proc calcChangedAreas*(motionMap: MatrixArr[Vec2[int]]): seq[ChangedAreaObj] =
 
 # process motion from two frames and compute the changedArea rect's where to look for objects
 proc processA*(am: MatrixArr[float64], bm: MatrixArr[float64]): seq[ChangedAreaObj] =
-  let motionMatrix: MatrixArr[Vec2[int]] = calcMotionMatrix2(am, bm)
+  var motionMatrix: MatrixArr[Vec2[int]] = calcMotionMatrix2(am, bm)
   
 
   if false:# debug motion matrix
