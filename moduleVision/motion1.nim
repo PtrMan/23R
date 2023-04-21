@@ -1,10 +1,16 @@
 import std/tables
 import std/strformat
-from std/math import sqrt
+from std/math import sqrt, sgn
 
 import motion0
 import matrixArr
 import vec2
+
+func abs(v: int): int =
+  if v<0:
+    return -v
+  return v
+
 
 # this file implements a service to retrieve areas where proto-object may be located by analyzing the motion between images
 
@@ -117,30 +123,42 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
   
 
   # * classify motion based on vector
-  var quadrants: seq[MatrixArr[int]] = @[]
-  quadrants.add( makeMatrixArr[int](motionMap.w, motionMap.h, 0) )
-  quadrants.add( makeMatrixArr[int](motionMap.w, motionMap.h, 0) )
-  quadrants.add( makeMatrixArr[int](motionMap.w, motionMap.h, 0) )
-  quadrants.add( makeMatrixArr[int](motionMap.w, motionMap.h, 0) )
+
+  let nDimBuckets: int = 3 # how many buckets for each motion component?
+  let hysteresisMinMotionMag: int = 2 # minimal magnitude of motion
+
+  # * classify motion based on vector
+  var motionBuckets: seq[MatrixArr[int]] = @[]
+  for z in 0..<(nDimBuckets*2+1):
+    motionBuckets.add( makeMatrixArr[int](motionMap.w, motionMap.h, 0) )
   
-  block:
+  block: # algorithm to put each vector of the velocity field into the right bucket
     
     for iy in 0..motionMap.h-1:
       for ix in 0..motionMap.w-1:
         
-        let dir: Vec2[int] = motionMap.atUnsafe(iy,ix)
-        if abs(dir.x) <= 0 and abs(dir.y) <= 0:
+        let vel: Vec2[int] = motionMap.atUnsafe(iy,ix)
+        if abs(vel.x) <= hysteresisMinMotionMag and abs(vel.y) <= hysteresisMinMotionMag: # hysteresis
           continue # not fast enough, ignore
+        
+        # compute index of velocity by dimension
+        var bucketIdxX: int = sgn(vel.x)*abs(int(vel.x/3)) + nDimBuckets + 1
+        bucketIdxX = max(bucketIdxX, 0)
+        bucketIdxX = min(bucketIdxX, nDimBuckets*2+1-1)
+
+        var bucketIdxY: int = sgn(vel.y)*abs(int(vel.y/3)) + nDimBuckets + 1
+        bucketIdxY = max(bucketIdxY, 0)
+        bucketIdxY = min(bucketIdxY, nDimBuckets*2+1-1)
+
 
         # iterate over quadrants to figure out in which quadrant to store
-        var iQuadrantIdx = 0
-        for idir in [(0,1),(0,-1),(1,0),(-1,0)]:
-          let a: int = ix*idir[0] + iy*idir[1]
-          let b: int = ix*idir[1] + iy*idir[0] # 90 degree rotated axis
-          if a >= 0 and abs(a) <= abs(b): # is inside quadrant?
-            quadrants[iQuadrantIdx].writeAtSafe(iy,ix,1)
-          
-          iQuadrantIdx+=1
+        var iBucketIdx = bucketIdxX + bucketIdxY*(nDimBuckets*2+1)
+        motionBuckets[iBucketIdx].writeAtSafe(iy,ix,1)
+
+
+
+
+
 
 
 
@@ -166,10 +184,8 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
 
       if motionMap.atSafe(iy,ix,Vec2[int](x:0,y:0)) != Vec2[int](x:0,y:0): # if there is something, then fill it!
         let itcol:int = ix + iy*motionMap.w + 1
-        boundaryFill(ix,iy,0,itcol,quadrants[0])
-        boundaryFill(ix,iy,0,itcol,quadrants[1])
-        boundaryFill(ix,iy,0,itcol,quadrants[2])
-        boundaryFill(ix,iy,0,itcol,quadrants[3])
+        for idx in 0..<motionBuckets.len:
+          boundaryFill(ix,iy,0,itcol,motionBuckets[idx])
 
 
 
@@ -177,12 +193,12 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
   # * compose groups
   var regionByColor: Table[int, ChangedAreaObj] = initTable[int, ChangedAreaObj]()
 
-  for iQuadrantIdx in 0..quadrants.len-1:
+  for iQuadrantIdx in 0..<motionBuckets.len:
     #
 
     for iy in 0..motionMap.h:
       for ix in 0..motionMap.w:
-        let selQuadrantMap: MatrixArr[int] = quadrants[iQuadrantIdx]
+        let selQuadrantMap: MatrixArr[int] = motionBuckets[iQuadrantIdx]
         let v: int = selQuadrantMap.atSafe(iy,ix,0)
         if v != 0: # is it a pixel which has a value?
           if v in regionByColor:
