@@ -24,7 +24,7 @@ proc runModuleNlp4*(nlText: string): seq[TermObj] =
   let lines = resStr.split('\n')
   for iLine in lines:
     if iLine.startsWith("statement="):
-      let nlStatement: string = iLine["statement=".len..iLine.len]
+      let nlStatement: string = iLine["statement=".len..iLine.len-1]
       echo(&"DBG nl to module={nlStatement}")
 
       
