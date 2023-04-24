@@ -14,7 +14,7 @@ proc runModuleNlp4AsStr(nlText: string): string =
 # runs NLP and returns terms
 proc runModuleNlp4*(nlText: string): seq[TermObj] =
   # we give the request to the LM
-  let resStr: string = runModuleNlp0AsStr(nlText)
+  let resStr: string = runModuleNlp4AsStr(nlText)
 
   echo("TERMINAL RESULT >>>") # DBG
   echo(resStr)
