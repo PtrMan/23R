@@ -8,7 +8,7 @@ import strutils
 import nar
 import tv
 import term
-import nlp2 # NLP module
+import nlp3 # NLP module
 
 import moduleNlp3/moduleNlp3 # NLP module
 
@@ -125,7 +125,7 @@ if isMainModule: # manually testing procedural reasoning
   if true:
     # test parsing etc.
     #parseNarInputAndPut("<a-->b>.:|:") # BUG: doesn't parse correctly!
-    parseNarInputAndPut("<a --> b>.:|:")
+    discard
 
   echo("EXIT  manual test")
 
@@ -134,7 +134,7 @@ if isMainModule: # manually testing procedural reasoning
 proc parseLine(line: string): bool =
   if line.len > 0 and line[0] == '>': # NLP input
     let nlText: string = line[1..line.len-1]
-    let statements: seq[TermObj] = runModuleNlp0(nlText)
+    let statements: seq[TermObj] = runModuleNlp4(nlText)
     for iStatement in statements:
       echo &"DBG: narsese from NLU ={convTermToStr(iStatement)}"
 
