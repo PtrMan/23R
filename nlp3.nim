@@ -6,8 +6,8 @@ import nar
 import term
 
 # run python script to use LM, return result as text
-proc runModuleNlp0AsStr(nlText: string): string =
-  let result = execProcess("python", args=["./moduleNlp3/toolParseNl4.py", &"{nlText}"], options={poUsePath})
+proc runModuleNlp4AsStr(nlText: string): string =
+  let result = execProcess("python", args=["./moduleNlp4/toolParseNl4.py", &"{nlText}"], options={poUsePath})
   return result
 
 
