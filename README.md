@@ -7,6 +7,9 @@ This project consists out of the intelligent "core" and comes with a vision subs
 
 The vision subsystem (which isn't integrated/used yet) also works in realtime, it also learns lifelong and incrementally. See in https://github.com/PtrMan/23R/tree/main/moduleVision for the vision system which is dedicated to vision.
 
+### How to install required dependencies?
+
+```curl https://nim-lang.org/choosenim/init.sh -sSf | sh```
 
 ### How to run?
 
