@@ -34,6 +34,12 @@ run net-NAR
 
     nim compile --threads:on --run entryNetUdpClient.nim
 
+### How to input natural language
+
+write > as a prefix in the shell. This is currenlty not implemented in the web interface! <br />
+example:
+
+    >Tom is a furry cat
 
 
 ### Wait! I care about theory!
