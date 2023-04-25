@@ -31,6 +31,15 @@ def tryParseFunctioncall(s):
     return None
 """
 
+def classifyAndExtractLine(s):
+  if s.startswith("* "):
+    return ('*', s[2:])
+  result = tryParseNumbered(s)
+  if result:
+    return ('n', result) # number
+  
+  return None
+
 
 # given a text from the LMt, extract the response
 # returns None if it failed
@@ -120,9 +129,9 @@ def groupCodes(list0):
 
 
 
-
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer, AutoModel
+if useLm:
+    import torch
+    from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer, AutoModel
 
     
 
@@ -167,24 +176,39 @@ if useLm:
 prompt0 = genPrompt(payload0, 'convNaturalToSimple0') # sentence to simpler relations
 prompt0 = f'### Human: {prompt0}\n'
 
-if True or useLm:
+x1 = None
+if False or useLm:
     x1 = runPrompt(prompt0, model, tokenizer)
 
 print(f'{x1}') # DBG
 
-x2 = extractLmResponse(x1)
+if useLm:
+    x2 = extractLmResponse(x1)
+
+#x2 = """The answer is
+#
+#* Marvin is an individual.
+#* Marvin is drunk.
+#* Marvin is living.
+#* Marvin is living on the moon."""
+#
+#x2 = """The answer is
+#
+#1. Marvin is an individual.
+#2. Marvin is drunk."""
 
 print('')
 print('')
 
-#print(x2) # DBG
+print(x2) # DBG
 
     
 resList = [] # list of result
 for iLine in x2.split('\n'):
-    parseRes = tryParseNumbered(iLine)
-    if parseRes is not None:
-        resList.append(parseRes)
+    lineParseRes = classifyAndExtractLine(iLine)
+    if lineParseRes:
+        type0, content = lineParseRes
+        resList.append(content)
 
 
 
