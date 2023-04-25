@@ -3,9 +3,9 @@
 This project is a :alien:system, it doesn't work like your usual machine learning (ML) systems. <br />
 It is a agent with true autonomy :robot:🧠, it deals with situations in realtime (<200ms reaction time), it can run all day, it learns lifelong and incrementally.
 
-This project consists out of the intelligent "core" and comes with a vision subsystem. This repository doesn't come pre-packaged with other tooling/subsystems.
+This project consists out of the intelligent "core" and comes with a vision subsystem. A subsystem to communicate with the system in natural language is also included. This repository doesn't come pre-packaged with other tooling/subsystems.
 
-The vision subsystem (which isn't integrated/used yet) also works in realtime, it also learns lifelong and incrementally. See in https://github.com/PtrMan/23R/tree/main/moduleVision for the vision system which is dedicated to vision.
+The vision subsystem (which isn't integrated/used yet) also works in realtime, it also learns lifelong and incrementally. See in https://github.com/PtrMan/23R/tree/main/moduleVision for the vision system.
 
 ### How to install required dependencies?
 
@@ -34,13 +34,16 @@ run net-NAR
 
     nim compile --threads:on --run entryNetUdpClient.nim
 
-### How to input natural language
+### How to input natural language?
 
 write > as a prefix in the shell. This is currenlty not implemented in the web interface! <br />
 example:
 
     >Tom is a furry cat
 
+### How to input in formal language?
+
+The formal language to communicate with the system with non-natural language is done in [narsese](https://github.com/PtrMan/23R/tree/main/docs/narsese.md).
 
 ### Wait! I care about theory!
 
