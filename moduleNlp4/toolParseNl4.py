@@ -139,7 +139,7 @@ def runPrompt(prompt0, model, tokenizer):
     # see https://huggingface.co/docs/transformers/tasks/language_modeling
     print(f'<run>>{prompt0}')
     inputs0 = tokenizer(prompt0, return_tensors="pt").input_ids
-    outputs = model.generate(inputs0, max_new_tokens=200, do_sample=True, top_k=20, top_p=0.95)
+    outputs = model.generate(inputs0, max_new_tokens=120, do_sample=True, top_k=20, top_p=0.95)
 
     #pipe = pipeline(model=modelName, device_map="cpu")
     #output = pipe("This is a cool example!", do_sample=True, top_k=50, top_p=0.95)
