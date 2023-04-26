@@ -10,6 +10,11 @@ proc runModuleNlp4AsStr(nlText: string): string =
   let result = execProcess("python", args=["./moduleNlp4/toolParseNl4.py", &"{nlText}"], options={poUsePath})
   return result
 
+# run python script to disambigate a word
+proc runPartDisambiguate0(npWord: string): string =
+  let result = execProcess("python", args=["./partDisambiguate/partDisambgiuate0.py", &"{npWord}"], options={poUsePath})
+  return result
+
 
 # runs NLP and returns terms
 proc runModuleNlp4*(nlText: string): seq[TermObj] =
@@ -39,15 +44,23 @@ proc runModuleNlp4*(nlText: string): seq[TermObj] =
       if tokens2.len == 3 and tokens2[1] == "is": # is relation detected 
         echo("IS relation detected!")
 
-        let subj: string = tokens2[0]
-        let pred: string = tokens2[2]
-        let narsese: string = &"<{subj} --> {pred}>."
+        let subjNl: string = tokens2[0]
+        let predNl: string = tokens2[2]
+
+        let wordtypePredNl: string = runPartDisambiguate0(predNl) # run external program to disambiguate word
+
+        var predNarsese: string = predNl
+        if wordtypePredNl == "NN":
+          predNarsese = "["&predNl&"]" # is a NAL property
+
+        let narsese: string = &"<{subjNl} --> {predNarsese}>."
         echo(&"nl to narsese={narsese}")
         
         
         let resParse = parseNarsese(narsese)
         if resParse.success and resParse.punct == judgement:
           res.add(resParse.term)
+
 
       elif tokens2.len == 3: # generic relation detected
         echo("generic relation detected!")
