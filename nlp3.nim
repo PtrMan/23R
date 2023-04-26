@@ -47,7 +47,12 @@ proc runModuleNlp4*(nlText: string): seq[TermObj] =
         let subjNl: string = tokens2[0]
         let predNl: string = tokens2[2]
 
-        let wordtypePredNl: string = runPartDisambiguate0(predNl) # run external program to disambiguate word
+        var wordtypePredNl: string
+        block:
+          let terminalOut2: string = runPartDisambiguate0(predNl) # run external program to disambiguate word
+          for iLine2 in terminalOut2.split('\n'):
+            if iLine2.startsWith("wordType0="):
+              wordtypePredNl = iLine2["wordType0=".len..iLine2.len-1]
 
         var predNarsese: string = predNl
         if wordtypePredNl == "NN":
