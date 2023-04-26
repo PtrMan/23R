@@ -28,10 +28,7 @@ proc runModuleNlp4*(nlText: string): seq[TermObj] =
   echo("\n<<<")
 
   var res: seq[TermObj] = @[]
-  #let lines = resStr.split('\n')
-
-  # HACK
-  let lines = @["statement=Tim is fat"]
+  let lines = resStr.split('\n')
 
   for iLine in lines:
     if iLine.startsWith("statement="):
