@@ -5,6 +5,8 @@ import std/strformat
 import nar
 import term
 
+
+
 # run python script to use LM, return result as text
 proc runModuleNlp4AsStr(nlText: string): string =
   let result = execProcess("python", args=["./moduleNlp4/toolParseNl4.py", &"{nlText}"], options={poUsePath})
@@ -12,21 +14,25 @@ proc runModuleNlp4AsStr(nlText: string): string =
 
 # run python script to disambigate a word
 proc runPartDisambiguate0(npWord: string): string =
-  let result = execProcess("python", args=["./partDisambiguate/partDisambgiuate0.py", &"{npWord}"], options={poUsePath})
+  let result = execProcess("python", args=["./partDisambiguate/partDisambiguate0.py", &"{npWord}"], options={poUsePath})
   return result
 
 
 # runs NLP and returns terms
 proc runModuleNlp4*(nlText: string): seq[TermObj] =
   # we give the request to the LM
-  let resStr: string = runModuleNlp4AsStr(nlText)
+  let resStr: string = ""#runModuleNlp4AsStr(nlText)
 
   echo("TERMINAL RESULT >>>") # DBG
   echo(resStr)
   echo("\n<<<")
 
   var res: seq[TermObj] = @[]
-  let lines = resStr.split('\n')
+  #let lines = resStr.split('\n')
+
+  # HACK
+  let lines = @["statement=Tim is fat"]
+
   for iLine in lines:
     if iLine.startsWith("statement="):
       let nlStatement: string = iLine["statement=".len..iLine.len-1]
@@ -50,6 +56,7 @@ proc runModuleNlp4*(nlText: string): seq[TermObj] =
         var wordtypePredNl: string
         block:
           let terminalOut2: string = runPartDisambiguate0(predNl) # run external program to disambiguate word
+          echo(terminalOut2)
           for iLine2 in terminalOut2.split('\n'):
             if iLine2.startsWith("wordType0="):
               wordtypePredNl = iLine2["wordType0=".len..iLine2.len-1]
