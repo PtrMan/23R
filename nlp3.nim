@@ -59,7 +59,7 @@ proc runModuleNlp4*(nlText: string): seq[TermObj] =
               wordtypePredNl = iLine2["wordType0=".len..iLine2.len-1]
 
         var predNarsese: string = predNl
-        if wordtypePredNl == "NN":
+        if wordtypePredNl in ["NN", "JJ"]:
           predNarsese = "["&predNl&"]" # is a NAL property
 
         let narsese: string = &"<{subjNl} --> {predNarsese}>."
