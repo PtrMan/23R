@@ -6,3 +6,6 @@
 
 pip install accelerate
 pip3 install git+https://github.com/huggingface/transformers
+
+# to support 8 bit loading
+pip install bitsandbytes
