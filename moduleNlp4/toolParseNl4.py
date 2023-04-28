@@ -1,6 +1,7 @@
 import sys
 
-modelName = '/notebooks/github_vicuna7b/vic7b'
+#modelPath = '/notebooks/github_vicuna7b/vic7b'
+modelPath = '/notebooks/z_temp/vicuna-13b-1.1'
 device = 'cpu'
 
 useLm = True # use LM or bypass for fast prototyping?
@@ -32,19 +33,24 @@ def tryParseFunctioncall(s):
 """
 
 def classifyAndExtractLine(s):
-  if s.startswith("* "):
-    return ('*', s[2:])
-  result = tryParseNumbered(s)
-  if result:
-    return ('n', result) # number
-  
-  return None
+    if s.startswith("* "):
+        return ('*', s[2:])
+    result = tryParseNumbered(s)
+    if result:
+        return ('n', result) # number
+    
+    return None
 
 
 # given a text from the LMt, extract the response
 # returns None if it failed
 def extractLmResponse(text):
-    z0 = '### Assistant: '
+    #z0 = '### Assistant: ' # v1.0
+    z0 = 'ASSISTANT: ' # v1.1
+    #z1 = '### Human: ' # v1.0
+    z1 = '</s>' # v1.1
+    
+    
     idx0 = text.find(z0)
     if idx0 == -1:
         return None
@@ -52,7 +58,6 @@ def extractLmResponse(text):
     text0 = text[idx1:]
 
     # try to find
-    z1 = '### Human: '
     idx2 = text0.find(z1)
     if idx2 == -1:
         return text0 # not found - is still valid, just truncated which probably isn't to bad
@@ -131,7 +136,9 @@ def groupCodes(list0):
 
 if useLm:
     import torch
-    from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer, AutoModel
+    
+    from accelerate import init_empty_weights
+    from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer, AutoModel, AutoConfig
 
     
 
@@ -158,6 +165,10 @@ def genPrompt(payload0, partName):
         # prompt for vincerna-7b
         prompt0 = f'Your task is to describe the sentence as statements in the form of statement("X"). Translate the sentence "{payload0}" to simpler statements!'
     
+    elif partName == 'convNaturalToSimple1': # convert natural language to simpler statements
+        # prompt for vincerna-13b v1.1
+        prompt0 = f'express the sentence as simple phrases/relations: "{payload0}". use bullet points!'
+    
     
     return prompt0
 
@@ -167,14 +178,29 @@ payload0 = 'Tom is fat and has a black hat'
 payload0 = sys.argv[1] # first argument
 
 if useLm:
-    tokenizer = AutoTokenizer.from_pretrained(modelName, use_fast=False)
-    model = AutoModelForCausalLM.from_pretrained(modelName, low_cpu_mem_usage=True) # **kwargs
+    """
+    tokenizer = AutoTokenizer.from_pretrained(modelPath, use_fast=False)
+    
+    
+    #model = AutoModelForCausalLM.from_pretrained(modelName, device_map='auto', load_in_8bit=True) # **kwargs
+    # low_cpu_mem_usage=True, 
+    
+    #with init_empty_weights():
+    config = AutoConfig.from_pretrained(modelPath, low_cpu_mem_usage=True, evice_map='auto', load_in_8bit=True)
+    model = AutoModelForCausalLM.from_config(config)
+    model.to(device)
+    """
+    
+    torchDtype = torch.float32
+    import compression
+    model, tokenizer = compression.load_compress_model(modelPath, device, torchDtype)
 
 
 
 
-prompt0 = genPrompt(payload0, 'convNaturalToSimple0') # sentence to simpler relations
-prompt0 = f'### Human: {prompt0}\n'
+prompt0 = genPrompt(payload0, 'convNaturalToSimple1') # sentence to simpler relations
+#prompt0 = f'### Human: {prompt0}\n' # for LMt vicuna-7b v1.0 and vicuna-13b v1.0
+prompt0 = f'USER: {prompt0}\nASSISTANT:' # for LMt vicuna-7b v1.1 and vicuna-13b v1.1
 
 x1 = None
 if False or useLm:
