@@ -15,8 +15,20 @@ proc processNl0*(nlIn: string): seq[SentenceObj] =
   proc op0(args: seq[TermObj]) =
     echo("main: ^op0 was invoked")
 
-  globalNarInstance.opRegistry.ops["^op0"] = op0
-  globalNarInstance.opRegistry.ops["^n9ExecAndInj"] = opLibNal9ExecAndInj # NAL-9
+  block:
+    var opInfOp: RegisteredOpRef = new (RegisteredOpRef)
+    opInfOp.callback = op0
+    opInfOp.supportsLongCall = false # is not a long callable op
+
+    globalNarInstance.opRegistry.ops["^op0"] = opInfOp
+  
+  block:
+    var opInfOp: RegisteredOpRef = new (RegisteredOpRef)
+    opInfOp.callback = opLibNal9ExecAndInj # NAL-9
+    opInfOp.supportsLongCall = false # is not a long callable op
+
+    globalNarInstance.opRegistry.ops["^n9ExecAndInj"] = opInfOp
+
 
   # install handler to intercept derived conclusion
   var concls: seq[SentenceObj] = @[]

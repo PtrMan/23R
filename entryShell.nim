@@ -35,7 +35,6 @@ narInit()
 proc op0(args:seq[TermObj]) =
   echo("main: ^op0 was invoked")
 
-globalNarInstance.opRegistry.ops["^op0"] = op0
 
 
 
@@ -44,6 +43,16 @@ globalNarInstance.opRegistry.ops["^op0"] = op0
 
 
 if isMainModule: # manually testing procedural reasoning
+  block:
+    var createdRegOp: RegisteredOpRef = new (RegisteredOpRef)
+    createdRegOp.callback = op0
+    createdRegOp.supportsLongCall = false # is not a long callable op
+
+    globalNarInstance.opRegistry.ops["^op0"] = createdRegOp
+
+
+
+
   echo("ENTER manual test")
 
   #let goalMem: MemObj = MemObj(concepts: @[])
@@ -187,7 +196,13 @@ proc parseLine(line: string): bool =
 
 if isMainModule:
   narInit() # reset memory and everything so we start cleanly into shell
-  globalNarInstance.opRegistry.ops["^op0"] = op0
+  block:
+    var createdRegOp: RegisteredOpRef = new (RegisteredOpRef)
+    createdRegOp.callback = op0
+    createdRegOp.supportsLongCall = false # is not a long callable op
+
+    globalNarInstance.opRegistry.ops["^op0"] = createdRegOp
+
 
   var showDerivations: bool = true
   proc derivConclCallback(s: SentenceObj) =

@@ -459,10 +459,15 @@ proc checkIsOp(term: TermObj): bool =
 
 type OpFnType* = proc(args:seq[TermObj]){.closure.}
 
+# type for a registered op
+type RegisteredOpRef* = ref object
+  callback*: OpFnType
+  supportsLongCall*: bool # does the op support long calls over many cycles?
+
 type
   OpRegistryObj* = ref OpRegistry
   OpRegistry* = object
-    ops*: Table[string,OpFnType] # list with registered ops
+    ops*: Table[string, RegisteredOpRef] # list with registered ops
 
 
 
@@ -2430,11 +2435,34 @@ proc wasExecutedInternalAction*(g: GoalObj, link: PredImplLinkObj, unifiedLinkSe
 
 
 
+# enable experimental support for long execution of ops (op is configured to be capable of long execution span)
+var enExperimentalOpLongExec*: bool = false # CONFIG
 
+# record to keep track of op exec in flight
+type OpExecInFLightRef* = ref object
+  name*: string # name of the op in flight
+  # invokeTime*: int64 # NAR time when the op was invoked first
+
+# list of pending ops
+# AIKR< not bound under AIKR because there are not many ops in flight at any point in time! >
+var opExecInFlight*: seq[OpExecInFlightRef] = @[]
 
 # set of judgement events to get processed
 # removal policy: items are not removed
 var procEligableEventJudgements*: seq[EventObj] = @[]
+
+
+
+
+
+# supprt for long exec ops - called from the outside when the exeuction of a long op was finished
+proc callbackOpExecLongFinished*(opName: string) =
+  var opExecInFlight2: seq[OpExecInFlightRef] = @[]
+  # remove from in flight
+  for z in opExecInFlight:
+    if opName != z.name:
+      opExecInFlight2.add(z)
+  opExecInFlight = opExecInFlight2
 
 
 
@@ -2571,31 +2599,60 @@ proc processGoalInner*(mem: MemObj, goalMem: MemObj, selGoal: GoalObj, opRegistr
 
   # decision making / subgoal derivation
   if bestDesire > globalNarInstance.decisionThreshold:
+    
     # * execute op
     let parseOpResult = tryParseOp(bestOp)
     case parseOpResult.resType
     of ParseOpRes:
-      # execute op
-      debug0(&"PG20 invoke op ... term={convTermToStr(bestOp)}")
-      opRegistry.ops[parseOpResult.name](parseOpResult.args)
-      debug0(&"PG20 ...done")
+      var enOpExec0: bool = true # enable op execution?
 
-      globalNarInstance.invokeOpCallback(bestOp) # call callback
-      
-      # * PERCEPTION: anticipation
-      discard """ # commented because buggy and not the right way
-      echo "selGoal.e.s.originContingency is not nil=", selGoal.e.s.originContingency!=nil
-      if selGoal.e.s.originContingency == nil:
-        panic("selGoal.e.s.originContingency is nil!")
-      anticipationPutAndNegConfirm(selGoal.e.s.originContingency)
-      """
 
-      echo "PG21 bestSelLink is not nil=", bestSelLink!=nil
-      if bestSelLink == nil:
-        panicDbg("PG22 bestSelLink is nil!")
-      anticipationPutAndNegConfirm(bestSelLink)
+      # special handling for op which is handled with long execution
+      # 
+      # in that case we pretend that the op was executed if it's still pending
+      # to avoid calling the same op again and again thus restarting a long process triggered by beginning of the op
+      if enExperimentalOpLongExec:
 
-      wasExecutedInternalAction(selGoal, bestSelLink, bestUnifiedPremiseTerm) # send action that we executed the goal
+        # check if op is already executing without confirmation of finishing, if so, pretend that it was executed by diabling execution
+        for iOpExecInFLight in opExecInFlight:
+          if iOpExecInFLight.name == parseOpResult.name:
+            debug0(&"PG50 ignore exec of op={parseOpResult.name} because op execution is already in flight")
+            enOpExec0 = false # disable execution of op because long execution is already in flight
+            break # optimization
+
+
+      if enOpExec0:
+        # execute op
+        debug0(&"PG20 invoke op ... term={convTermToStr(bestOp)}")
+        opRegistry.ops[parseOpResult.name].callback(parseOpResult.args)
+        debug0(&"PG20 ...done")
+
+        globalNarInstance.invokeOpCallback(bestOp) # call callback
+        
+        # * PERCEPTION: anticipation
+        discard """ # commented because buggy and not the right way
+        echo "selGoal.e.s.originContingency is not nil=", selGoal.e.s.originContingency!=nil
+        if selGoal.e.s.originContingency == nil:
+          panic("selGoal.e.s.originContingency is nil!")
+        anticipationPutAndNegConfirm(selGoal.e.s.originContingency)
+        """
+
+        echo "PG21 bestSelLink is not nil=", bestSelLink!=nil
+        if bestSelLink == nil:
+          panicDbg("PG22 bestSelLink is nil!")
+        anticipationPutAndNegConfirm(bestSelLink)
+
+        wasExecutedInternalAction(selGoal, bestSelLink, bestUnifiedPremiseTerm) # send action that we executed the goal
+
+        if enExperimentalOpLongExec:
+
+          # * check if op is enabled for long execution and add to "opExecInFlight"
+          if globalNarInstance.opRegistry.ops[parseOpResult.name].supportsLongCall:
+            var opExecRecord: OpExecInFLightRef = new (OpExecInFLightRef)
+            opExecRecord.name = parseOpResult.name
+            opExecInFlight.add(opExecRecord)
+
+
     of NoneParseRes:
       discard # not a op, so it's not executable
 
@@ -3711,13 +3768,18 @@ proc narInit*() =
 
 
 
-  var ops0 = initTable[string, OpFnType]()
+  var ops0 = initTable[string, RegisteredOpRef]()
   let opRegistry: OpRegistryObj = OpRegistryObj(ops:ops0)
 
   globalNarInstance = NarCtx(conclCallback: nullConclhandler, invokeOpCallback: nullOpHandler, opRegistry: opRegistry, currentTime:0)
   globalNarInstance.decisionThreshold = 0.501
 
-  globalNarInstance.opRegistry.ops["^infOp0"] = infOpable
+  block:
+    var opInfOp: RegisteredOpRef = new (RegisteredOpRef)
+    opInfOp.callback = infOpable
+    opInfOp.supportsLongCall = false # is not a long callable op
+
+    globalNarInstance.opRegistry.ops["^infOp0"] = opInfOp
 
   globalNarInstance.eventsByOccTime = initTable[int64, seq[EventObj]]()
 
@@ -3820,9 +3882,6 @@ proc parseNarsese*(narseseIn: string): tuple[term: TermObj, success: bool, punct
   else: # nothing matched!
     return (term:nil, success:false, punct:judgement, isEvent: false)
   
-  #echo("here5252yyy7y5")
-  #echo(narsese)
-
   
   let tokens: seq[Token0Obj] = tokenize(narsese)
   parserCalcDepthOfTokens(tokens)
@@ -3925,7 +3984,7 @@ proc opLibNal9ExecAndInj*(args: seq[TermObj]) =
       of ParseOpRes:
         # invoke op
         debug0(&"invoke op ... term={convTermToStr(iOpTerm)}")
-        globalNarInstance.opRegistry.ops[parseOpRes.name](parseOpRes.args)
+        globalNarInstance.opRegistry.ops[parseOpRes.name].callback(parseOpRes.args)
         debug0(&"...done", 4)
         
       of NoneParseRes:
