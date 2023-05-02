@@ -699,6 +699,8 @@ type
     narDerivedEventsSampledSetLevel1*: SampledSetDsRef
 
     lastPerceivedEvent: EventObj # event which was last perceived
+    perceptionLayer0lastPerceivedEvent: EventObj
+
 
 
 
@@ -3411,7 +3413,6 @@ proc perceptionLayerControlEntry(ctx: ProcessingCtxRef, ctx2: PerceptionLayerCtx
 
 
 
-var perceptionLayer0lastPerceivedEvent: EventObj
 
 var perceptionLayer0ProcessingCtx: ProcessingCtxRef
 var perceptionLayer0Ctx: PerceptionLayerCtxRef
@@ -3422,8 +3423,8 @@ proc processPerceptionLayer0(mem: MemObj) =
   if not enPerceptionLayer:
     return # disabled
 
-  if globalNarInstance.lastPerceivedEvent != perceptionLayer0lastPerceivedEvent:
-    perceptionLayer0lastPerceivedEvent = globalNarInstance.lastPerceivedEvent
+  if globalNarInstance.lastPerceivedEvent != globalNarInstance.perceptionLayer0lastPerceivedEvent:
+    globalNarInstance.perceptionLayer0lastPerceivedEvent = globalNarInstance.lastPerceivedEvent
     
     # * we need to reset perception
 
