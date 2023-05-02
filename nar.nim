@@ -698,6 +698,9 @@ type
     # PERCEPTION: set of recently derived events
     narDerivedEventsSampledSetLevel1*: SampledSetDsRef
 
+    lastPerceivedEvent: EventObj # event which was last perceived
+
+
 
     tasksetPerception1*: Taskset0[Perception1TaskRef] # set of tasks for perception1
 
@@ -3036,7 +3039,6 @@ proc perceptionFindLastFrame(events: seq[EventRef]): ref tuple[innerEvents:seq[E
 ##################################
 ### PERCEPTION - general
 
-var lastPerceivedEvent: EventObj # event which was last perceived
 
 
 
@@ -3420,8 +3422,8 @@ proc processPerceptionLayer0(mem: MemObj) =
   if not enPerceptionLayer:
     return # disabled
 
-  if lastPerceivedEvent != perceptionLayer0lastPerceivedEvent:
-    perceptionLayer0lastPerceivedEvent = lastPerceivedEvent
+  if globalNarInstance.lastPerceivedEvent != perceptionLayer0lastPerceivedEvent:
+    perceptionLayer0lastPerceivedEvent = globalNarInstance.lastPerceivedEvent
     
     # * we need to reset perception
 
@@ -3698,7 +3700,7 @@ proc proceduralStep*() =
 proc proceduralInputPerceiveAtCurrentTime*(s:SentenceObj, mem: MemObj) =
   var event0:EventObj = EventObj(s:s, occTime:globalNarInstance.currentTime)
 
-  lastPerceivedEvent = event0 # set this event as last perceived event
+  globalNarInstance.lastPerceivedEvent = event0 # set this event as last perceived event
 
   procEligableEventJudgements.add(event0)
 
