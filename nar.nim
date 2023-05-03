@@ -34,6 +34,9 @@ const STAMPMAXLEN: int = 25
 
 
 
+var verbosityDbgA: int = 0 # verbosity for some debugging of deriver
+
+
 
 var procRng: Rand = initRand(345) # rng for procedural reasoner
 
@@ -278,13 +281,34 @@ proc memGc*(mem: MemObj) =
 
 # lookup concept by name
 proc memLookupConceptByName(mem: MemObj, name: TermObj): ConceptObj =
-  if name in mem.conceptsByName:
-    return mem.conceptsByName[name]
-  #for iConcept in mem.concepts:
-  #  #dbg   echo(&"cmp {convTermToStr(iConcept.name)} with {convTermToStr(name)}<")
-  #  if termEq(iConcept.name, name):
-  #    return iConcept
+  #echo(&"DBGE {convTermToStr(name)} {hash(name)}")
+  
+  #echo("ENUM")
+  # HACKY SLOW WAY to find it!
+  for iv in mem.conceptsByName.keys:
+    if hash(iv)==hash(name):
+      let ic = mem.conceptsByName[iv]
+      #echo(ic != nil)
+      return ic
+
+    #echo(&"DGGG {convTermToStr(iv)} {hash(iv)}")
   return nil
+
+  #return mem.conceptsByName[name]
+  
+  #echo(mem.conceptsByName.hasKey(name))
+
+  # hacky slow way because "if name in mem.conceptsByName:" doesn't work with current Nim version!
+  #try:
+  #  return mem.conceptsByName[name]
+  #except KeyError as e:
+  #  echo("DBGGG ret nil")
+  #  return nil
+
+  # old way which doesn't work because something is buggy in Nim
+  #if name in mem.conceptsByName:
+  #  return mem.conceptsByName[name]
+  #return nil
 
 proc retNumberOfConcept*(mem: MemObj): int =
   ##return mem.concepts.len
@@ -1456,7 +1480,7 @@ proc ctrlQaStep*() =
     # select random question task
     # TODO LOW< select by priority distribution of question >
 
-    let selTaskIdx = narRand.rand(questionTaskset.set0.len)
+    let selTaskIdx = narRand.rand(questionTaskset.set0.len-1)
     let selQuestionTask: Task0 = questionTaskset.set0[selTaskIdx]
 
     # try to answer with better answer
@@ -1466,9 +1490,10 @@ proc ctrlQaStep*() =
     #       a cheaper way would be to limit it to the most active concepts by lookup of concept priority by term of belief
     #     >
     for iRelevantConceptTerm in relevantConceptTerms:
+      
       let iRelevantConcept: ConceptObj = memLookupConceptByName(globalNarInstance.mem, iRelevantConceptTerm)
       if iRelevantConcept != nil: # was concept found
-        
+
         for iBelief in iRelevantConcept.content.content:
           if checkUnifyQa(selQuestionTask.sentence.term, iBelief.term):
             var isBetterSolution: bool = false
@@ -1542,10 +1567,9 @@ proc ctrlStep*() =
         discard
 
   else:
-    debug0(fmt"warn: concept ""{convTermToStr(term51)}"" was not found!")
+    if verbosityDbgA > 0:
+      debug0(fmt"warn: concept ""{convTermToStr(term51)}"" was not found!")
   
-  debug0("cntr: here1", 20)
-
   ## execute hardcoded deriver
   # we do this here to 'bootstrap' known derivations for the more flexible derivation path
   var doneDerivs: seq[DoneDerivObj] = @[]
