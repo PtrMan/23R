@@ -2839,6 +2839,10 @@ type
     
     registers*: array[16, EventRef]
 
+    #commented because not in use
+    #arr*: seq[EventRef] # global array of values (currently only events), is used for various purposes
+
+
 func vm0make(): Vm0CtxRef =
   var registers: array[16, EventRef]
   return Vm0CtxRef(registers: registers)
@@ -3000,9 +3004,30 @@ proc vm0SelLastFromFifo(ctx: Vm0CtxRef, destRegIdx: int) =
     ctx.registers[destRegIdx] = lastEvent
   
 
+# idea< implement basic array and also sampling for flexible implementations of motor babbling >
+discard """
+
+# add a item to the array of the context
+proc vm0ArrPut(ctx: Vm0CtxRef, srcRegIdx: int) =
+  ctx.arr.add(ctx.registers[srcRegIdx])
 
 
+# flush array of context
+proc vm0ArrFlush(ctx: Vm0CtxRef) =
+  ctx.arr = @[]
 
+
+# sample a item in the array of the context by probability
+proc vm0ArrSample(ctx: Vm0CtxRef, destRegIdx: int) =
+  ctx.registers[destRegIdx] = nil
+
+  if ctx.arr.len == 0:
+    return # nothing to sample
+
+  selIdx: int = GENRNG()
+
+  ctx.registers[destRegIdx] = ctx.arr[selIdx]
+"""
 
 
 
