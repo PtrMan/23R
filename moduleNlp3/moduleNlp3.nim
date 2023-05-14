@@ -16,17 +16,11 @@ proc processNl0*(nlIn: string): seq[SentenceObj] =
     echo("main: ^op0 was invoked")
 
   block:
-    var opInfOp: RegisteredOpRef = new (RegisteredOpRef)
-    opInfOp.callback = op0
-    opInfOp.supportsLongCall = false # is not a long callable op
-
+    var opInfOp: RegisteredOpRef = makeOp(op0)
     globalNarInstance.opRegistry.ops["^op0"] = opInfOp
   
   block:
-    var opInfOp: RegisteredOpRef = new (RegisteredOpRef)
-    opInfOp.callback = opLibNal9ExecAndInj # NAL-9
-    opInfOp.supportsLongCall = false # is not a long callable op
-
+    var opInfOp: RegisteredOpRef = makeOp(opLibNal9ExecAndInj) # NAL-9
     globalNarInstance.opRegistry.ops["^n9ExecAndInj"] = opInfOp
 
 

@@ -486,7 +486,24 @@ type OpFnType* = proc(args:seq[TermObj]){.closure.}
 # type for a registered op
 type RegisteredOpRef* = ref object
   callback*: OpFnType
-  supportsLongCall*: bool # does the op support long calls over many cycles?
+  #supportsLongCall*: bool # does the op support long calls over many cycles?
+
+  supportFlags*: Table[string, bool] # flags assigned to the op
+                                     # valid key are "babble" to disable motor babbling
+                                     # valid key is "longCall" if the op supports calls over many cycles
+
+# check if a op supports a given flag
+func checkOpSupports*(op: RegisteredOpRef, flagName: string, default: bool): bool =
+  if op.supportFlags.hasKey(flagName):
+    return default # not found so it supports is based on the default value
+  return op.supportFlags[flagName]
+
+# helper to create op
+func makeOp*(callBack: OpFnType): RegisteredOpRef =
+  var res = new (RegisteredOpRef)
+  res.callback = callback
+  res.supportFlags = initTable[string, bool]()
+  return res
 
 type
   OpRegistryObj* = ref OpRegistry
@@ -2675,8 +2692,9 @@ proc processGoalInner*(mem: MemObj, goalMem: MemObj, selGoal: GoalObj, opRegistr
 
         if enExperimentalOpLongExec:
 
-          # * check if op is enabled for long execution and add to "opExecInFlight"
-          if globalNarInstance.opRegistry.ops[parseOpResult.name].supportsLongCall:
+          # * check if op is enabled for long execution and if so add entry to "opExecInFlight"
+          let supportsLongCall: bool = checkOpSupports(globalNarInstance.opRegistry.ops[parseOpResult.name], "longCall", false)
+          if supportsLongCall:
             var opExecRecord: OpExecInFLightRef = new (OpExecInFLightRef)
             opExecRecord.name = parseOpResult.name
             opExecInFlight.add(opExecRecord)
@@ -3827,10 +3845,7 @@ proc narInit*() =
   globalNarInstance.decisionThreshold = 0.501
 
   block:
-    var opInfOp: RegisteredOpRef = new (RegisteredOpRef)
-    opInfOp.callback = infOpable
-    opInfOp.supportsLongCall = false # is not a long callable op
-
+    var opInfOp: RegisteredOpRef = makeOp(infOpable)
     globalNarInstance.opRegistry.ops["^infOp0"] = opInfOp
 
   globalNarInstance.eventsByOccTime = initTable[int64, seq[EventObj]]()

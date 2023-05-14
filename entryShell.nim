@@ -44,10 +44,7 @@ proc op0(args:seq[TermObj]) =
 
 if isMainModule: # manually testing procedural reasoning
   block:
-    var createdRegOp: RegisteredOpRef = new (RegisteredOpRef)
-    createdRegOp.callback = op0
-    createdRegOp.supportsLongCall = false # is not a long callable op
-
+    var createdRegOp: RegisteredOpRef = makeOp(op0)
     globalNarInstance.opRegistry.ops["^op0"] = createdRegOp
 
 
@@ -197,10 +194,7 @@ proc parseLine(line: string): bool =
 if isMainModule:
   narInit() # reset memory and everything so we start cleanly into shell
   block:
-    var createdRegOp: RegisteredOpRef = new (RegisteredOpRef)
-    createdRegOp.callback = op0
-    createdRegOp.supportsLongCall = false # is not a long callable op
-
+    var createdRegOp: RegisteredOpRef = makeOp(op0)
     globalNarInstance.opRegistry.ops["^op0"] = createdRegOp
 
 
