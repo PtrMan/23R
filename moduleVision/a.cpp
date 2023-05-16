@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
     std::string imgSrc = std::string(argv[1]); // "net" or "disk"
 
     std::string SERVER_ADDRESS = "127.0.0.1";
-    int SERVER_PORT = 50009;
+    int SERVER_PORT = 9998; //50009;
     
     if (std::string(argv[1]) == "net") {
         // expect server adress as 2nd argument
