@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
     NimMain();
 
 
-    tyObject_VisionSys0__69b9cVmnf9agBXMCdAtUelPgg* visionSys = visionSys0Create();
+    tyObject_VisionSys0__oVN47SFz1a81o5jF7529aKg* visionSys = visionSys0Create();
 
     int sock = -1;
     std::vector<unsigned char> buffer2;
