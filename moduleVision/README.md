@@ -21,4 +21,9 @@ code from https://gist.github.com/PtrMan/b05e71718626deaa141d8ad0a1598c20
 
 **b)**  connect vision sytem to proxy <br />
 
+`./a net 127.0.0.1`
+
 **c)**  connect camera feed script to proxy <br />
+
+
+
