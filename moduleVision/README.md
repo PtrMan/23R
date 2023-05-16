@@ -13,6 +13,10 @@ This is a repo for a reasoner and a vision system. Currently only the vision sys
 * modify path to Nim lib in ./build.sh
 * run `./build.sh`
 
+**c)** run program <br />
+
+* run `./a disk`
+
 #### How to run in network mode?
 
 **a)** start proxy on a computer <br />
