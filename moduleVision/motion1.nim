@@ -129,7 +129,7 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
 
   # * classify motion based on vector
   var motionBuckets: seq[MatrixArr[int]] = @[]
-  for z in 0..<(nDimBuckets*2+1):
+  for z in 0..<(nDimBuckets*2+1)*(nDimBuckets*2+1):
     motionBuckets.add( makeMatrixArr[int](motionMap.w, motionMap.h, 0) )
   
   block: # algorithm to put each vector of the velocity field into the right bucket
