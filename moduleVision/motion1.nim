@@ -231,8 +231,8 @@ func calcChangedAreasBasedOnChangeOfColor(aRed: MatrixArr[float64], aGreen: Matr
 
     # Y of the "white point" 
     let whitePointY: float = 0.5 # TODO< tune >
-    let whitePointU: float = 0.5 # TODO< tune >
-    let whitePointV: float = 0.5 # TODO< tune >
+    let whitePointU: float = 0.25 # TODO< tune >
+    let whitePointV: float = 0.45 # TODO< tune >
     
     # https://en.wikipedia.org/wiki/CIELUV
     var lStar: float
