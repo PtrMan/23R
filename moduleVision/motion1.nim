@@ -1,6 +1,6 @@
 import std/tables
 import std/strformat
-from std/math import sqrt, sgn
+from std/math import sqrt, sgn, pow
 
 import motion0
 import matrixArr
@@ -213,6 +213,63 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
     groups.add(iChangeArea)
   
   return groups
+
+
+# EXPERIMENTAL - compute change by change of color and compute areas from that
+func calcChangedAreasBasedOnChangeOfColor(aRed: MatrixArr[float64], aGreen: MatrixArr[float64], aBlue: MatrixArr[float64],    bRed: MatrixArr[float64], bGreen: MatrixArr[float64], bBlue: MatrixArr[float64]): seq[ChangedAreaObj] =
+  
+  func rgbToXyz(r: float, g: float, b: float): (float,float,float) =
+    # https://physics.stackexchange.com/questions/487763/how-are-the-matrices-for-the-rgb-to-from-cie-xyz-conversions-generated
+    let x: float = r*0.412453 + g*0.357580 + b*0.180423
+    let y: float = r*0.212671 + g*0.715160 + b*0.072169
+    let z: float = r*0.019334 + g*0.119193 + b*0.950227
+    return (x,y,z)
+
+  # CIE-luv color space which is close to human color perception
+  func convXyzToCieluv(xyz: (float,float,float)): (float,float) =
+    let (x, y, z) = xyz
+
+    # Y of the "white point" 
+    let whitePointY: float = 0.5 # TODO< tune >
+    let whitePointU: float = 0.5 # TODO< tune >
+    let whitePointV: float = 0.5 # TODO< tune >
+    
+    # https://en.wikipedia.org/wiki/CIELUV
+    var lStar: float
+    if y / whitePointY < pow(6.0/29.0, 3.0):
+      lStar = 116.0*pow(y/whitePointY,1.0/3.0)
+    else:
+      lStar = pow(29.0/3.0, 3.0)*(y / whitePointY)
+    
+    let uTick: float = (4.0*x) / (x + 15.0*y + 3.0*z)
+    let vTick: float = (9.0*y) / (x + 15.0*y + 3.0*z)
+    
+    let uStar: float = 13.0*lStar*(uTick - whitePointU)
+    let vStar: float = 13.0*lStar*(vTick - whitePointV)  
+    
+    return (uStar, vStar)
+  
+  var colorChangeMap: MatrixArr[bool] = makeMatrixArr(aRed.w, aRed.h, false)
+
+  for iy in 0..aRed.h-1:
+    for ix in 0..aRed.w-1:
+      let (ua, va) = convXyzToCieluv( rgbToXyz(aRed.atUnsafe(iy, ix), aGreen.atUnsafe(iy, ix), aBlue.atUnsafe(iy, ix)) )
+      let (ub, vb) = convXyzToCieluv( rgbToXyz(bRed.atUnsafe(iy, ix), bGreen.atUnsafe(iy, ix), bBlue.atUnsafe(iy, ix)) )
+      
+      # compute distance in color space
+      let diffU: float = ua-ub
+      let diffV: float = va-vb
+      let distInColorSpace: float = sqrt(diffU*diffU + diffV*diffV)
+
+      let colorSpaceThreshold: float = 0.1 # TODO< tune me! >
+      
+      let colorChangedToMuch: bool = distInColorSpace > colorSpaceThreshold
+
+      colorChangeMap.writeAtSafe(iy,ix,colorChangedToMuch)
+  
+  # GROUP pixels and create "ChangedAreaObj" from it
+  # TODO TODO TODO TODO
+
 
 # process motion from two frames and compute the changedArea rect's where to look for objects
 proc processA*(am: MatrixArr[float64], bm: MatrixArr[float64]): seq[ChangedAreaObj] =
