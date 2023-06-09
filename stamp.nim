@@ -1,5 +1,6 @@
 import sequtils
 import sets
+import std/streams
 
 proc merge*(s1, s2: seq[int64], maxLen: int): seq[int64] =
   # prompt to chatGPT to generate most of the code:
@@ -40,3 +41,30 @@ proc checkStampOverlap*(a, b: seq[int64]): bool =
     let aSet = toHashSet(a)
     let bSet = toHashSet(b)
     return intersection(aSet,bSet).len != 0
+
+
+
+
+# marshal to raw data
+proc marshalStampAsRaw(self: seq[int64]): seq[char] =
+  var strm = newStringStream("")
+  strm.write(self)
+  
+  strm.setPosition(0)
+
+  let len = strm.getPosition()
+  var dat: seq[char] = @[]
+  for idx in 0..<len:
+    dat.add(strm.readChar())
+  strm.close()
+  return dat
+
+# marshal from raw data
+proc marshalStampFromRaw(raw: seq[char]): seq[int64] =
+  var strm = newStringStream("")
+  for iv in raw:
+    strm.write(iv)
+  strm.setPosition(0)
+  var result: seq[int64]
+  strm.read(result)
+  return result
