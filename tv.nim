@@ -1,3 +1,5 @@
+import std/streams
+
 type
   Tv* = object
     f*: float64
@@ -80,3 +82,15 @@ func tvGoalDed*(a: Tv, b: Tv): Tv =
         return res1
     return res2
 
+
+
+# marshal to raw data
+proc marshalTvAsRaw(self: Tv, dest: StringStream) =
+  dest.write(self.f)
+  dest.write(self.evi)
+
+# marshal from raw data
+proc marshalTvFromRaw(src: StringStream): Tv =
+  let f: float64 = src.readFloat64()
+  let evi: float64 = src.readFloat64()
+  return Tv(f:f, evi:evi)

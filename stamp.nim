@@ -46,25 +46,11 @@ proc checkStampOverlap*(a, b: seq[int64]): bool =
 
 
 # marshal to raw data
-proc marshalStampAsRaw(self: seq[int64]): seq[char] =
-  var strm = newStringStream("")
-  strm.write(self)
-  
-  strm.setPosition(0)
-
-  let len = strm.getPosition()
-  var dat: seq[char] = @[]
-  for idx in 0..<len:
-    dat.add(strm.readChar())
-  strm.close()
-  return dat
+proc marshalStampAsRaw(self: seq[int64], dest: StringStream) =
+  dest.write(self)
 
 # marshal from raw data
-proc marshalStampFromRaw(raw: seq[char]): seq[int64] =
-  var strm = newStringStream("")
-  for iv in raw:
-    strm.write(iv)
-  strm.setPosition(0)
+proc marshalStampFromRaw(src: StringStream): seq[int64] =
   var result: seq[int64]
-  strm.read(result)
+  src.read(result)
   return result
