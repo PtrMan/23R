@@ -117,7 +117,7 @@ proc visionSys0classifyAndAdd*(self: VisionSys0Obj, rawDat:seq[float64]): Protot
 
 # PUBLIC interface
 # processes a new image girven the old image
-proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: MatrixArr[float64]) =
+proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: MatrixArr[float64],   ar: MatrixArr[float64], ag: MatrixArr[float64], ab: MatrixArr[float64],   br: MatrixArr[float64], bg: MatrixArr[float64], bb: MatrixArr[float64]) =
   let a=0
 
   var changedAreas: seq[ChangedAreaObj] = processA(am, bm)
@@ -170,7 +170,7 @@ var outStatsRecognized*: int64
 
 # C++ binding of vision processing
 # takes flat C arrays of the images
-proc visionSys0process0Cpp*(self: VisionSys0Obj, aArr: ptr UncheckedArray[float64], bArr: ptr UncheckedArray[float64]) {.exportc.} =
+proc visionSys0process0Cpp*(self: VisionSys0Obj, aArr: ptr UncheckedArray[float64], bArr: ptr UncheckedArray[float64],  arArr: ptr UncheckedArray[float64], agArr: ptr UncheckedArray[float64], abArr: ptr UncheckedArray[float64],   brArr: ptr UncheckedArray[float64], bgArr: ptr UncheckedArray[float64], bbArr: ptr UncheckedArray[float64]) {.exportc.} =
   # convert array back to matrix
   var am: MatrixArr[float64] = makeMatrixArr(128, 80, 0.0)
   block:
@@ -190,7 +190,39 @@ proc visionSys0process0Cpp*(self: VisionSys0Obj, aArr: ptr UncheckedArray[float6
         bm.writeAtSafe(iy,ix,v)
         iidx+=1
   
-  visionSys0process0(self, am, bm)
+
+  var ar: MatrixArr[float64] = makeMatrixArr(128, 80, 0.0)
+  var ag: MatrixArr[float64] = makeMatrixArr(128, 80, 0.0)
+  var ab: MatrixArr[float64] = makeMatrixArr(128, 80, 0.0)
+  block:
+    var iidx: int = 0
+    for iy in 0..bm.h-1:
+      for ix in 0..bm.w-1:
+        let r: float64 = arArr[iidx]
+        let g: float64 = agArr[iidx]
+        let b: float64 = abArr[iidx]
+        ar.writeAtSafe(iy,ix,r)
+        ag.writeAtSafe(iy,ix,g)
+        ab.writeAtSafe(iy,ix,b)
+        iidx+=1
+  
+  var br: MatrixArr[float64] = makeMatrixArr(128, 80, 0.0)
+  var bg: MatrixArr[float64] = makeMatrixArr(128, 80, 0.0)
+  var bb: MatrixArr[float64] = makeMatrixArr(128, 80, 0.0)
+  block:
+    var iidx: int = 0
+    for iy in 0..bm.h-1:
+      for ix in 0..bm.w-1:
+        let r: float64 = arArr[iidx]
+        let g: float64 = arArr[iidx]
+        let b: float64 = arArr[iidx]
+        br.writeAtSafe(iy,ix,r)
+        bg.writeAtSafe(iy,ix,g)
+        bb.writeAtSafe(iy,ix,b)
+        iidx+=1
+
+  
+  visionSys0process0(self, am, bm,   ar, ag, ab,  br, bg, bb)
 
   # update global vars for statistics
   outStatsCreatedNewCategory = self.statsCreatedNewCategory

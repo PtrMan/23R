@@ -24,9 +24,9 @@
 using namespace cv;
 
 #include "visionSys0.h"
-extern char* outResStr0__vision83ys48_1149;
-extern NI64 outStatsCreatedNewCategory__vision83ys48_1039;
-extern NI64 outStatsRecognized__vision83ys48_1040;
+extern char* outResStr0__vision83ys48_1317;
+extern NI64 outStatsCreatedNewCategory__vision83ys48_1051;
+extern NI64 outStatsRecognized__vision83ys48_1052;
 
 
 //typedef double NF;
@@ -141,6 +141,7 @@ int main(int argc, char* argv[]) {
 
 
     Mat imgGrayLast;
+    Mat imgSmallLast;
 
     bool isFirstFrame = true;
 
@@ -294,10 +295,13 @@ int main(int argc, char* argv[]) {
         
         Mat imgGray;
         cv::resize(imgGray2, imgGray, cv::Size(128, 80), cv::INTER_LINEAR); // size is (width, height)
-  
+
+        Mat imgSmall;
+        cv::resize(img, imgSmall, cv::Size(128, 80), cv::INTER_LINEAR);
         
         if (isFirstFrame) {
             imgGrayLast = imgGray;
+            imgSmallLast = imgSmall;
         }
         isFirstFrame = false;
 
@@ -321,12 +325,42 @@ int main(int argc, char* argv[]) {
         }
 
 
+
+        std::vector<double> arrCurrentR;
+        std::vector<double> arrCurrentG;
+        std::vector<double> arrCurrentB;
+        for(int j=0;j<imgSmall.rows;j++) {
+            for (int i=0;i<imgSmall.cols;i++) {
+                uchar valR = imgSmall.at<cv::Vec3b>(j,i)[0];
+                uchar valG = imgSmall.at<cv::Vec3b>(j,i)[1];
+                uchar valB = imgSmall.at<cv::Vec3b>(j,i)[2];
+                arrCurrentR.push_back(valR/255.0);
+                arrCurrentG.push_back(valG/255.0);
+                arrCurrentB.push_back(valB/255.0);
+            }
+        }
+
+        std::vector<double> arrLastR;
+        std::vector<double> arrLastG;
+        std::vector<double> arrLastB;
+        for(int j=0;j<imgSmallLast.rows;j++) {
+            for (int i=0;i<imgSmallLast.cols;i++) {
+                uchar valR = imgSmallLast.at<cv::Vec3b>(j,i)[0];
+                uchar valG = imgSmallLast.at<cv::Vec3b>(j,i)[1];
+                uchar valB = imgSmallLast.at<cv::Vec3b>(j,i)[2];
+                arrLastR.push_back(valR/255.0);
+                arrLastG.push_back(valG/255.0);
+                arrLastB.push_back(valB/255.0);
+            }
+        }
+
+
         {
-            visionSys0process0Cpp(visionSys, &arrCurrent[0], &arrLast[0]);
+            visionSys0process0Cpp(visionSys, &arrCurrent[0], &arrLast[0],     &arrCurrentR[0], &arrCurrentG[0], &arrCurrentB[0],   &arrLastR[0], &arrLastG[0], &arrLastB[0]);
 
             std::cout << "" << std::endl;
-            std::cout << "DBG: stats: createdNewCategory="<<outStatsCreatedNewCategory__vision83ys48_1039 << std::endl;
-            std::cout << "DBG: stats: recognized        ="<<outStatsRecognized__vision83ys48_1040 << std::endl;
+            std::cout << "DBG: stats: createdNewCategory="<<outStatsCreatedNewCategory__vision83ys48_1051 << std::endl;
+            std::cout << "DBG: stats: recognized        ="<<outStatsRecognized__vision83ys48_1052 << std::endl;
         
             convClassnWithRectsToStrCpp(visionSys); // convert classes to string
         }
@@ -335,7 +369,7 @@ int main(int argc, char* argv[]) {
         cv::cvtColor(imgGray, dbgCanvas, cv::COLOR_GRAY2BGR);
 
         { // take string containing the result from the vision system apart
-            char* outResStr0 = outResStr0__vision83ys48_1149;
+            char* outResStr0 = outResStr0__vision83ys48_1317;
 
             std::string outResStr1 = std::string(outResStr0);
             std::vector<std::string> v0 = split(outResStr1, '\n');
