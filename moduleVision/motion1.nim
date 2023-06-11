@@ -72,13 +72,28 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
 
   # new spinglass/firefly inspired algorithm to even out motion
   var selSpinglassAlgorithm: string = "spinglass" # which algorithm is selected as the spinglass algoirthm? "spinglass" for spinglass-inspired algorthm, "" for doing nothing in this step
+
+  var spinglassSteps: int = 5
+  var spinglassCouplingFactor: float = 0.8
+
+  # this setting worked good enough in streetscene, but 'real world' seems to be problematic
+  selSpinglassAlgorithm = "spinglass"
+  spinglassSteps = 5
+  spinglassCouplingFactor = 0.8
+
+
+  # safe settings
+  selSpinglassAlgorithm = ""
+  
+
+
   if selSpinglassAlgorithm == "spinglass":
     # compute how much the two motion vectors are "coupled"
     func calcCouplingFactor(a: Vec2[float], b: Vec2[float]): float =
       # calc dot product
       let dotRes: float = a.x*b.x + a.y*b.y
 
-      let dirCouplingVal: float = (dotRes - 0.8) * (1.0 / (1.0 - 0.8))
+      let dirCouplingVal: float = (dotRes - spinglassCouplingFactor) * (1.0 / (1.0 - spinglassCouplingFactor))
 
       if dirCouplingVal < 0.0:
         return 0.0 # not the same direction thus they are not coupled
@@ -101,7 +116,8 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
         let zy: float = float(motionMap.atUnsafe(iy, ix).y)
         m.writeAtSafe(iy, ix, Vec2[float](x:zx,y:zy))
 
-    for iStep in 0..<5:
+
+    for iStep in 0..<spinglassSteps:
       var m2: MatrixArr[Vec2[float]] = makeMatrixArr(motionMap.w, motionMap.h, Vec2[float](x:0.0,y:0.0)) # next matrix
 
       for iy in 1..<m.h-1:
@@ -146,7 +162,7 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
   # * classify motion based on vector
 
   let nDimBuckets: int = 3 # how many buckets for each motion component?
-  let hysteresisMinMotionMag: int = 2 # minimal magnitude of motion
+  let hysteresisMinMotionMag: int = 2 # 2 # minimal magnitude of motion
 
   # * classify motion based on vector
   var motionBuckets: seq[MatrixArr[int]] = @[]

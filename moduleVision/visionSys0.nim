@@ -149,7 +149,7 @@ proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: Matrix
       let extendWidth = iArea.max.x - iArea.min.x
       let extendHeight = iArea.max.y - iArea.min.y
       let extend = min(extendWidth, extendHeight)
-      if extend > 10:
+      if extend > 2:
         changedAreas2.add(iArea)
     
     changedAreas = changedAreas2
