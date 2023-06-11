@@ -72,7 +72,6 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
 
   # new spinglass/firefly inspired algorithm to even out motion
   var selSpinglassAlgorithm: string = "spinglass" # which algorithm is selected as the spinglass algoirthm? "spinglass" for spinglass-inspired algorthm, "" for doing nothing in this step
-
   var spinglassSteps: int = 5
   var spinglassCouplingFactor: float = 0.8
 
@@ -162,7 +161,7 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
   # * classify motion based on vector
 
   let nDimBuckets: int = 3 # how many buckets for each motion component?
-  let hysteresisMinMotionMag: int = 2 # 2 # minimal magnitude of motion
+  let hysteresisMinMotionMag: int = 1 # 2 # minimal magnitude of motion
 
   # * classify motion based on vector
   var motionBuckets: seq[MatrixArr[int]] = @[]
@@ -175,7 +174,7 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
       for ix in 0..motionMap.w-1:
         
         let vel: Vec2[int] = motionMap.atUnsafe(iy,ix)
-        if abs(vel.x) <= hysteresisMinMotionMag and abs(vel.y) <= hysteresisMinMotionMag: # hysteresis
+        if abs(vel.x) < hysteresisMinMotionMag and abs(vel.y) < hysteresisMinMotionMag: # hysteresis
           continue # not fast enough, ignore
         
         # compute index of velocity by dimension
