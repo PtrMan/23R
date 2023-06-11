@@ -82,7 +82,7 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
 
 
   # safe settings
-  selSpinglassAlgorithm = ""
+  #selSpinglassAlgorithm = ""
   
 
 
