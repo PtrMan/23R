@@ -197,7 +197,7 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
 
 
 
-
+  discard """
   # FIXME< extremely inefficient hacky algorithm to get unique colors! >
   for iy in 0..motionMap.h-1:
     for ix in 0..motionMap.w-1:
@@ -206,6 +206,22 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
         let itcol:int = ix + iy*motionMap.w + 1
         for idx in 0..<motionBuckets.len:
           boundaryFill(ix,iy,0,itcol,motionBuckets[idx])
+  """
+
+  block:
+    # algorithm to fill pixels which are adjacent to each other
+    
+    for iMotionBucketIdx in 0..<motionBuckets.len:
+
+      for iy in 0..motionMap.h-1:
+        for ix in 0..motionMap.w-1:
+      
+          let val: int = motionBuckets[iMotionBucketIdx].atUnsafe(iy,ix)
+          if val == 1: # is not jet filled with a color?
+            # fill it
+            let itcol: int = 2 + ix + iy*motionMap.w + 1
+            boundaryFill(ix,iy,0,itcol,motionBuckets[iMotionBucketIdx])
+
 
 
 
