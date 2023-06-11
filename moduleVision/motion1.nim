@@ -221,7 +221,7 @@ proc calcChangedAreas*(motionMap: var MatrixArr[Vec2[int]]): seq[ChangedAreaObj]
 
 
 # EXPERIMENTAL - compute change by change of color and compute areas from that
-func calcChangedAreasBasedOnChangeOfColor(aRed: MatrixArr[float64], aGreen: MatrixArr[float64], aBlue: MatrixArr[float64],    bRed: MatrixArr[float64], bGreen: MatrixArr[float64], bBlue: MatrixArr[float64]): seq[ChangedAreaObj] =
+func calcChangedAreasBasedOnChangeOfColor*(aRed: MatrixArr[float64], aGreen: MatrixArr[float64], aBlue: MatrixArr[float64],    bRed: MatrixArr[float64], bGreen: MatrixArr[float64], bBlue: MatrixArr[float64]): seq[ChangedAreaObj] =
   
   func rgbToXyz(r: float, g: float, b: float): (float,float,float) =
     # https://physics.stackexchange.com/questions/487763/how-are-the-matrices-for-the-rgb-to-from-cie-xyz-conversions-generated

@@ -115,12 +115,24 @@ proc visionSys0classifyAndAdd*(self: VisionSys0Obj, rawDat:seq[float64]): Protot
 
   return res0.proto
 
+
 # PUBLIC interface
 # processes a new image girven the old image
 proc visionSys0process0*(self: VisionSys0Obj, am: MatrixArr[float64], bm: MatrixArr[float64],   ar: MatrixArr[float64], ag: MatrixArr[float64], ab: MatrixArr[float64],   br: MatrixArr[float64], bg: MatrixArr[float64], bb: MatrixArr[float64]) =
   let a=0
 
-  var changedAreas: seq[ChangedAreaObj] = processA(am, bm)
+  var changedAreas: seq[ChangedAreaObj]
+  
+  block:
+    var thisChangedAreas: seq[ChangedAreaObj] = processA(am, bm)
+    for iv in thisChangedAreas:
+      changedAreas.add(iv)
+
+  var enProposalByColor = false # EXPERIMENTAL: enable generation of proposals by change of color?  
+  if enProposalByColor:
+    var thisChangedAreas: seq[ChangedAreaObj] = calcChangedAreasBasedOnChangeOfColor(ar, ag, ab, br, bg, bb)
+    for iv in thisChangedAreas:
+      changedAreas.add(iv)
 
   echo("")
   echo("")

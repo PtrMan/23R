@@ -24,9 +24,9 @@
 using namespace cv;
 
 #include "visionSys0.h"
-extern char* outResStr0__vision83ys48_1317;
-extern NI64 outStatsCreatedNewCategory__vision83ys48_1051;
-extern NI64 outStatsRecognized__vision83ys48_1052;
+extern char* outResStr0__vision83ys48_1345;
+extern NI64 outStatsCreatedNewCategory__vision83ys48_1070;
+extern NI64 outStatsRecognized__vision83ys48_1071;
 
 
 //typedef double NF;
@@ -359,8 +359,8 @@ int main(int argc, char* argv[]) {
             visionSys0process0Cpp(visionSys, &arrCurrent[0], &arrLast[0],     &arrCurrentR[0], &arrCurrentG[0], &arrCurrentB[0],   &arrLastR[0], &arrLastG[0], &arrLastB[0]);
 
             std::cout << "" << std::endl;
-            std::cout << "DBG: stats: createdNewCategory="<<outStatsCreatedNewCategory__vision83ys48_1051 << std::endl;
-            std::cout << "DBG: stats: recognized        ="<<outStatsRecognized__vision83ys48_1052 << std::endl;
+            std::cout << "DBG: stats: createdNewCategory="<<outStatsCreatedNewCategory__vision83ys48_1070 << std::endl;
+            std::cout << "DBG: stats: recognized        ="<<outStatsRecognized__vision83ys48_1071 << std::endl;
         
             convClassnWithRectsToStrCpp(visionSys); // convert classes to string
         }
@@ -369,7 +369,7 @@ int main(int argc, char* argv[]) {
         cv::cvtColor(imgGray, dbgCanvas, cv::COLOR_GRAY2BGR);
 
         { // take string containing the result from the vision system apart
-            char* outResStr0 = outResStr0__vision83ys48_1317;
+            char* outResStr0 = outResStr0__vision83ys48_1345;
 
             std::string outResStr1 = std::string(outResStr0);
             std::vector<std::string> v0 = split(outResStr1, '\n');
