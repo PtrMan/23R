@@ -59,7 +59,7 @@ if isMainModule: # manually testing procedural reasoning
     if true:
       # add testing goal
       let term = termMkName("a2")
-      var inSentence: ref Sentence = new(Sentence)
+      var inSentence: SentenceObj = new(SentenceObj)
       inSentence.term = term
       inSentence.punct = goal
       insentence.tv = makeTv(1.0, 0.92)
@@ -74,7 +74,7 @@ if isMainModule: # manually testing procedural reasoning
       let term1 = termMkName("a1")
       let term2 = termMkSeq(term0, term1)
 
-      var inSentence: ref Sentence = new(Sentence)
+      var inSentence: SentenceObj = new(SentenceObj)
       inSentence.term = term2
       inSentence.punct = goal
       insentence.tv = makeTv(1.0, 0.92)
@@ -87,7 +87,7 @@ if isMainModule: # manually testing procedural reasoning
     block:
       block:
         let term = termMkName("a0")
-        var inSentence: ref Sentence = new(Sentence)
+        var inSentence: SentenceObj = new(SentenceObj)
         inSentence.term = term
         inSentence.punct = judgement
         insentence.tv = makeTv(1.0, 0.92)
@@ -97,7 +97,7 @@ if isMainModule: # manually testing procedural reasoning
 
       block:
         let term = termMkName("a1")
-        var inSentence: ref Sentence = new(Sentence)
+        var inSentence: SentenceObj = new(SentenceObj)
         inSentence.term = term
         inSentence.punct = judgement
         insentence.tv = makeTv(1.0, 0.92)
@@ -107,7 +107,7 @@ if isMainModule: # manually testing procedural reasoning
 
       block:
         let term = termMkName("a2")
-        var inSentence: ref Sentence = new(Sentence)
+        var inSentence: SentenceObj = new(SentenceObj)
         inSentence.term = term
         inSentence.punct = judgement
         insentence.tv = makeTv(1.0, 0.92)
@@ -145,7 +145,7 @@ proc parseLine(line: string): bool =
       echo &"DBG: narsese from NLU ={convTermToStr(iStatement)}"
 
       # feed into NAR
-      var inSentence: ref Sentence = new (Sentence)
+      var inSentence: SentenceObj = new (SentenceObj)
       inSentence.term = iStatement
       inSentence.punct = judgement
       inSentence.tv = makeTv(1.0, 0.92)

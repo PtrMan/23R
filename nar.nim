@@ -64,30 +64,26 @@ type PunctEnum* = enum
   judgement, question, goal
 
 # link of a predictive implication from the predicate to the subject (target)
-type
-  PredImplLinkObj* = ref PredImplLink
-  PredImplLink* = object
-    target*: TermObj
-    tv*: Tv # truth value of the predictive implication
-    stamp*: seq[int64] # stamp of the predictive implication link
+type PredImplLinkObj* = ref object
+  target*: TermObj
+  tv*: Tv # truth value of the predictive implication
+  stamp*: seq[int64] # stamp of the predictive implication link
 
-    pred*: TermObj # predicate of virtual =/>
+  pred*: TermObj # predicate of virtual =/>
 
-type
-  SentenceObj* = ref Sentence
-  Sentence* = object
-    term*: TermObj
-    tv*: Tv
-    punct*: PunctEnum
-    stamp*: seq[int64]
+type SentenceObj* = ref object
+  term*: TermObj
+  tv*: Tv
+  punct*: PunctEnum
+  stamp*: seq[int64]
 
-    # link which points from the predicate to the subject over a predictive implication
-    # can be nil if it has no link
-    predImplLinks: seq[PredImplLinkObj]
+  # link which points from the predicate to the subject over a predictive implication
+  # can be nil if it has no link
+  predImplLinks: seq[PredImplLinkObj]
 
 
-    originContingency: PredImplLinkObj # predimpllink which stands for contingency, which is the origin of that goal, can be nil
-                                       # example: (a, ^x)!:|:  has originContingency (a, ^x)=/>b.
+  originContingency: PredImplLinkObj # predimpllink which stands for contingency, which is the origin of that goal, can be nil
+                                      # example: (a, ^x)!:|:  has originContingency (a, ^x)=/>b.
 
 
 
@@ -479,7 +475,14 @@ proc checkIsOp(term: TermObj): bool =
     of NoneParseRes:
       return false
 
-
+# NOTE< caller should assume that the input term is a OP in the first place! >
+func retOpName(t: TermObj): string =
+  let z = tryParseOp(t)
+  case z.resType
+  of ParseOpRes:
+    return z.name
+  else:
+    return "" # we return "" because we can't return anything meaningful - should not happen
 
 type OpFnType* = proc(args:seq[TermObj]){.closure.}
 
@@ -1073,18 +1076,14 @@ proc r1LeftToRight(termLeft: TermObj): TermObj =
 
 
 # type used to 'log' done derivations
-type
-  DoneDerivObj = ref DoneDeriv
-  DoneDeriv = object
+type DoneDerivObj = ref object
     premiseATerm: TermObj # is the term of the first premise
     premiseBTerm: TermObj # is the term of the second premise
 
     concl: SentenceObj # is the conclusion
 
 # context for "goal driven control" control mechanism
-type
-  GoaldrivenCtrlCtxObj = ref GoaldrivenCtrlCtx
-  GoaldrivenCtrlCtx = object
+type GoaldrivenCtrlCtxObj = ref object
     conditionPremiseTerm: TermObj # is the term which is carried over from the condition of the contingency to the premise of the inference
 
     doneDerivs: seq[DoneDerivObj] # done derivations in the last step by the hardcoded deriver
@@ -1284,13 +1283,13 @@ proc deriveSinglePremiseInternal(aTerm: TermObj, aTv: Tv, aStamp: seq[int64]): s
   
   block:
     for iConcl in ruleNal4ProdToImg(aTerm, aTv):
-      let conclS: ref Sentence = new (Sentence)
+      let conclS: SentenceObj = new (SentenceObj)
       conclS.term = iConcl.term
       conclS.tv = iConcl.tv
       conclS.punct = judgement
       conclS.stamp = aStamp
 
-      let doneDeriv: ref DoneDeriv = new (DoneDeriv)
+      let doneDeriv: DoneDerivObj = new (DoneDerivObj)
       doneDeriv.premiseATerm = aTerm
       doneDeriv.premiseBTerm = nil
       doneDeriv.concl = conclS
@@ -1299,13 +1298,13 @@ proc deriveSinglePremiseInternal(aTerm: TermObj, aTv: Tv, aStamp: seq[int64]): s
   block:
     let x = ruleNal4ImgToProd(aTerm, aTv)
     if x!=nil:
-      let conclS: ref Sentence = new (Sentence)
+      let conclS: SentenceObj = new (SentenceObj)
       conclS.term = x.term
       conclS.tv = x.tv
       conclS.punct = judgement
       conclS.stamp = aStamp
 
-      let doneDeriv: ref DoneDeriv = new (DoneDeriv)
+      let doneDeriv: DoneDerivObj = new (DoneDerivObj)
       doneDeriv.premiseATerm = aTerm
       doneDeriv.premiseBTerm = nil
       doneDeriv.concl = conclS
@@ -1336,13 +1335,13 @@ proc deriveInternal(mem: MemObj, a: TermObj, aTv: Tv, aStamp: seq[int64], b: Ter
       var conclTv: Tv = makeTv(0.0, 0.0)
       z0(inh(A, B), inh(B, C), "Ded", inh(A, C))
       if concl!=nil:
-        let conclS: ref Sentence = new (Sentence)
+        let conclS: SentenceObj = new (SentenceObj)
         conclS.term = concl
         conclS.tv = conclTv
         conclS.punct = judgement
         conclS.stamp = merge(aStamp, bStamp, STAMPMAXLEN)
 
-        let doneDeriv: ref DoneDeriv = new (DoneDeriv)
+        let doneDeriv: DoneDerivObj = new (DoneDerivObj)
         doneDeriv.premiseATerm = a
         doneDeriv.premiseBTerm = b
         doneDeriv.concl = conclS
@@ -1357,13 +1356,13 @@ proc deriveInternal(mem: MemObj, a: TermObj, aTv: Tv, aStamp: seq[int64], b: Ter
       var conclTv: Tv = makeTv(0.0, 0.0)
       z0(inh(A, C), inh(B, C), "Abd", inh(B, A))
       if concl!=nil:
-        let conclS: ref Sentence = new (Sentence)
+        let conclS: SentenceObj = new (SentenceObj)
         conclS.term = concl
         conclS.tv = conclTv
         conclS.punct = judgement
         conclS.stamp = merge(aStamp, bStamp, STAMPMAXLEN)
 
-        let doneDeriv: ref DoneDeriv = new (DoneDeriv)
+        let doneDeriv: DoneDerivObj = new (DoneDerivObj)
         doneDeriv.premiseATerm = a
         doneDeriv.premiseBTerm = b
         doneDeriv.concl = conclS
@@ -1378,13 +1377,13 @@ proc deriveInternal(mem: MemObj, a: TermObj, aTv: Tv, aStamp: seq[int64], b: Ter
       var conclTv: Tv = makeTv(0.0, 0.0)
       z0(inh(A, B), inh(A, C), "Ind", inh(C, B))
       if concl!=nil:
-        let conclS: ref Sentence = new (Sentence)
+        let conclS: SentenceObj = new (SentenceObj)
         conclS.term = concl
         conclS.tv = conclTv
         conclS.punct = judgement
         conclS.stamp = merge(aStamp, bStamp, STAMPMAXLEN)
 
-        let doneDeriv: ref DoneDeriv = new (DoneDeriv)
+        let doneDeriv: DoneDerivObj = new (DoneDerivObj)
         doneDeriv.premiseATerm = a
         doneDeriv.premiseBTerm = b
         doneDeriv.concl = conclS
@@ -1399,13 +1398,13 @@ proc deriveInternal(mem: MemObj, a: TermObj, aTv: Tv, aStamp: seq[int64], b: Ter
       var conclTv: Tv = makeTv(0.0, 0.0)
       z0(inh(A, B), inh(A, C), "Comp", sim(A, C))
       if concl!=nil:
-        let conclS: ref Sentence = new (Sentence)
+        let conclS: SentenceObj = new (SentenceObj)
         conclS.term = concl
         conclS.tv = conclTv
         conclS.punct = judgement
         conclS.stamp = merge(aStamp, bStamp, STAMPMAXLEN)
 
-        let doneDeriv: ref DoneDeriv = new (DoneDeriv)
+        let doneDeriv: DoneDerivObj = new (DoneDerivObj)
         doneDeriv.premiseATerm = a
         doneDeriv.premiseBTerm = b
         doneDeriv.concl = conclS
@@ -1420,13 +1419,13 @@ proc deriveInternal(mem: MemObj, a: TermObj, aTv: Tv, aStamp: seq[int64], b: Ter
 
       var conclOpt = ruleNal6Ded(a, aTv, b, bTv)
       if conclOpt!=nil:
-        let conclS: ref Sentence = new (Sentence)
+        let conclS: SentenceObj = new (SentenceObj)
         conclS.term = conclOpt.term
         conclS.tv = conclOpt.tv
         conclS.punct = judgement
         conclS.stamp = merge(aStamp, bStamp, STAMPMAXLEN)
 
-        let doneDeriv: ref DoneDeriv = new (DoneDeriv)
+        let doneDeriv: DoneDerivObj = new (DoneDerivObj)
         doneDeriv.premiseATerm = a
         doneDeriv.premiseBTerm = b
         doneDeriv.concl = conclS
@@ -1624,7 +1623,7 @@ proc ctrlStep*() =
     let term81: TermObj = termMkProd(@[iDoneDeriv.premiseATerm, term80])
     let term83: TermObj = termMkInh(term81, termMkName("CTRL0"))
 
-    let pseudoContingeny: ref Sentence = new (Sentence)
+    let pseudoContingeny: SentenceObj = new (SentenceObj)
     pseudoContingeny.term = term83
     pseudoContingeny.punct = judgement
 
@@ -2441,8 +2440,7 @@ proc reactFnGoalDeduction(self: Adt0Obj, premiseAArg: EventObj) =
 # internal action to react to finishing of execution of op
 # /param unifiedLinkSeqTerm the unified premise term ex: (a, <x -->y>)    from (a, %%0-->y)
 proc wasExecutedInternalAction*(g: GoalObj, link: PredImplLinkObj, unifiedLinkSeqTerm: TermObj) =
-  #return # HACK< we don't care about building the RFT relation!!! >
-
+  
   debug0(&"WEIA00: {convTermToStr(g.e.s.term)}")
   debug0(&"WEIA02: {convTermToStr(link.target)}")
 
@@ -2484,14 +2482,14 @@ proc wasExecutedInternalAction*(g: GoalObj, link: PredImplLinkObj, unifiedLinkSe
 # enable experimental support for long execution of ops (op is configured to be capable of long execution span)
 var enExperimentalOpLongExec*: bool = false # CONFIG
 
-# record to keep track of op exec in flight
-type OpExecInFLightRef* = ref object
-  name*: string # name of the op in flight
-  # invokeTime*: int64 # NAR time when the op was invoked first
+##### record to keep track of op exec in flight
+####type OpExecInFLightRef* = ref object
+####  name*: string # name of the op in flight
+####  # invokeTime*: int64 # NAR time when the op was invoked first
 
 # list of pending ops
 # AIKR< not bound under AIKR because there are not many ops in flight at any point in time! >
-var opExecInFlight*: seq[OpExecInFlightRef] = @[]
+####var opExecInFlight*: seq[OpExecInFlightRef] = @[]
 
 # set of judgement events to get processed
 # removal policy: items are not removed
@@ -2501,14 +2499,223 @@ var procEligableEventJudgements*: seq[EventObj] = @[]
 
 
 
-# supprt for long exec ops - called from the outside when the exeuction of a long op was finished
-proc callbackOpExecLongFinished*(opName: string) =
-  var opExecInFlight2: seq[OpExecInFlightRef] = @[]
-  # remove from in flight
-  for z in opExecInFlight:
-    if opName != z.name:
-      opExecInFlight2.add(z)
-  opExecInFlight = opExecInFlight2
+
+
+
+
+
+
+
+# signature
+# I : in
+# O : out
+# ^a : delayed(O)
+# ^b : delayed(IO)
+
+
+# ex:
+# <({SELF} *  ##0 ) --> ^a> !
+
+
+
+# put on queue:
+# ( <({SELF} * ##0 * ##1 ) --> ^b>, <({SELF} * ##1 * ##2 ) --> ^b>) !
+
+# (then the queue is informed when ever a finish signal is sent, after that variables are unfied with the output, etc)
+
+
+
+type PendingExecQueueItemRef = ref object
+  term: TermObj # sentence which holds either a sequence or a raw op which is pending
+  
+  #originalTerm: TermObj # term of the "original" goal to be fullfilled
+  # TODO< use "originalTerm" in the goal derivation to decide wheter to spawn a PendingExecQueueItemRef for derferable ops.
+  #       don't do this if a PendingExecQueueItemRef already exist with the same "ogiginalS" as the derived goal
+  #       reason for that is to not spawn PendingExecQueueItemRef for the same base-contigency multiple times while processing is still in progress
+  #     >
+
+  link: PredImplLinkObj # =/> link which points at originalTerm etc.
+
+# returns term of the "original" goal to be fullfilled
+func retOriginalTerm(z: PendingExecQueueItemRef): TermObj =
+  return z.link.target
+
+# helper which returns the term of the first op which is pending execution
+func retFirstOp(self: PendingExecQueueItemRef): TermObj =
+  case self.term.type0
+  of sequence:
+    # is a sequence, extract and return first item because it is the pending op
+    return self.term.items0[0]
+  else:
+    return self.term # the raw term is the pending executing op
+
+func retFirstOpName(self: PendingExecQueueItemRef): string =
+  let firstOp: TermObj = retFirstOp(self)
+  return retOpName(firstOp)
+
+
+# set of ops or sequences of ops which are executing and where the finishing is pending
+var pendingExecQueue: seq[PendingExecQueueItemRef]
+
+
+# internal signal after PendingExecQueueItemRef was added
+proc internalNotifyPutPendingExecQueueItem(v: PendingExecQueueItemRef) =
+  # * we need to execute the first op
+  
+  var opTerm: TermObj = nil
+  case v.term.type0
+  of sequence:
+    opTerm = v.term.items0[0] # we take first item from seq
+  else:
+    opTerm = v.term
+
+
+
+  # * invoke op
+  let parseOpResult = tryParseOp(opTerm)
+
+  case parseOpResult.resType
+  of ParseOpRes:
+    # execute op
+    debug0(&"PG60 invoke op ... term={convTermToStr(opTerm)}")
+    globalNarInstance.opRegistry.ops[parseOpResult.name].callback(parseOpResult.args)
+    debug0(&"PG60 ...done")
+
+    globalNarInstance.invokeOpCallback(opTerm) # call callback
+
+  of NoneParseRes:
+    return
+
+
+
+
+# called from outside whenever the execuation of a pending defered op finished
+# /param startTerm term of the op which was invoked, contains inputs but not results of the result
+# /param finTerm term of the op which contains the results of the invocation of the op
+# OLD: callbackOpExecLongFinished
+proc   notifyDeferedOpExecFinished(startTerm: TermObj, finTerm: TermObj) =
+  # we need to search for the corresponding item with the op which got executed
+  var idx: int = 0
+  var found: bool = false
+  while idx < pendingExecQueue.len:
+    echo(&"{convTermToStr(pendingExecQueue[idx].term)}")
+
+    if termEq(startTerm, retFirstOp(pendingExecQueue[idx])):
+      # term matches up
+      found = true
+      break
+    idx+=1
+  
+  if found:
+    debug0("PROC86: found PendingExecQueueItemRef in set")
+
+    let pendingItem: PendingExecQueueItemRef = pendingExecQueue[idx]
+
+    # remove pending item
+    pendingExecQueue.delete(idx)
+
+    # TODO< unify variable of output >
+    var st: TermObj = pendingItem.term # sentence term
+
+    if checkIsSeq(pendingItem.term):
+      # * we cut away the first item because processing is done
+      var opTerm: TermObj = nil
+      case st.type0
+      of sequence:
+        opTerm = st.items0[1]
+        st = termMkSeq2(st.items0[1..st.items0.len-1])
+      else:
+        discard # soft internal error - ignore
+      
+      # * invoke op
+      block:
+        let parseOpResult = tryParseOp(opTerm)
+        case parseOpResult.resType
+        of ParseOpRes:
+          # execute op
+          debug0(&"PG60 invoke op ... term={convTermToStr(opTerm)}")
+          globalNarInstance.opRegistry.ops[parseOpResult.name].callback(parseOpResult.args)
+          debug0(&"PG60 ...done")
+
+          globalNarInstance.invokeOpCallback(opTerm) # call callback
+          
+          # * PERCEPTION: anticipation
+          discard """ # commented because buggy and not the right way
+          echo "selGoal.e.s.originContingency is not nil=", selGoal.e.s.originContingency!=nil
+          if selGoal.e.s.originContingency == nil:
+            panic("selGoal.e.s.originContingency is nil!")
+          anticipationPutAndNegConfirm(selGoal.e.s.originContingency)
+          """
+
+
+          # 15.06.2023 : commented because IDK how to handle this neg confirm with op-chaining
+          discard """
+
+          echo "PG21 bestSelLink is not nil=", pendingItem.bestSelLink!=nil
+          if pendingItem.bestSelLink == nil:
+            panicDbg("PG22 bestSelLink is nil!")
+          anticipationPutAndNegConfirm(pendingItem.bestSelLink)
+
+          wasExecutedInternalAction(selGoal, pendingItem.bestSelLink, bestUnifiedPremiseTerm) # send action that we executed the goal
+          """
+
+        of NoneParseRes:
+          return
+
+
+
+
+
+
+
+
+      # add to pending
+      block:
+        var createdPendingItem: PendingExecQueueItemRef = new (PendingExecQueueItemRef)
+        createdPendingItem.term = st
+        createdPendingItem.link = pendingItem.link
+
+        pendingExecQueue.add(createdPendingItem)
+
+    else:
+      # if it was a single op then we are finished
+
+      # now we can signal completion of the execution of the ops of the involved predImpl
+      # TODO
+      discard
+  else:
+    # soft internal error, just ignore
+    discard
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#####
+###### support for long exec ops - called from the outside when the exeuction of a long op was finished
+#####proc callbackOpExecLongFinished*(opName: string) =
+#####  var opExecInFlight2: seq[OpExecInFlightRef] = @[]
+#####  # remove from in flight
+#####  for z in opExecInFlight:
+#####    if opName != z.name:
+#####      opExecInFlight2.add(z)
+#####  opExecInFlight = opExecInFlight2
 
 
 
@@ -2660,11 +2867,12 @@ proc processGoalInner*(mem: MemObj, goalMem: MemObj, selGoal: GoalObj, opRegistr
       if enExperimentalOpLongExec:
 
         # check if op is already executing without confirmation of finishing, if so, pretend that it was executed by diabling execution
-        for iOpExecInFLight in opExecInFlight:
-          if iOpExecInFLight.name == parseOpResult.name:
+        for iPendingExecQueueItem in pendingExecQueue:
+          if retFirstOpName(iPendingExecQueueItem) == parseOpResult.name:
             debug0(&"PG50 ignore exec of op={parseOpResult.name} because op execution is already in flight")
             enOpExec0 = false # disable execution of op because long execution is already in flight
             break # optimization
+
 
 
       if enOpExec0:
@@ -2695,9 +2903,16 @@ proc processGoalInner*(mem: MemObj, goalMem: MemObj, selGoal: GoalObj, opRegistr
           # * check if op is enabled for long execution and if so add entry to "opExecInFlight"
           let supportsLongCall: bool = checkOpSupports(globalNarInstance.opRegistry.ops[parseOpResult.name], "longCall", false)
           if supportsLongCall:
-            var opExecRecord: OpExecInFLightRef = new (OpExecInFLightRef)
-            opExecRecord.name = parseOpResult.name
-            opExecInFlight.add(opExecRecord)
+            ####var opExecRecord: OpExecInFLightRef = new (OpExecInFLightRef)
+            ####opExecRecord.name = parseOpResult.name
+            ####opExecInFlight.add(opExecRecord)
+
+
+            let link: PredImplLinkObj = bestSelLink # link on the subject side of the pred impl
+            let createdPendingItem: PendingExecQueueItemRef = PendingExecQueueItemRef(link:link, term:link.target)
+            pendingExecQueue.add(createdPendingItem)
+            internalNotifyPutPendingExecQueueItem(createdPendingItem) # we need to internally notify the reasoner after we added the item to the queue
+
 
 
     of NoneParseRes:
@@ -3969,7 +4184,7 @@ proc parseNarInputAndPut*(narseseIn: string) =
   echo fmt"in:term={convTermToStr(resParse.term)}"
   echo &"in:punct={resParse.punct}"
 
-  var inSentence: ref Sentence = new (Sentence)
+  var inSentence: SentenceObj = new (SentenceObj)
   inSentence.term = resParse.term
   inSentence.punct = resParse.punct
   inSentence.tv = makeTv(1.0, 0.92)
@@ -4430,6 +4645,90 @@ if false: # manual test for 'perception layer'
 
 # DONE 15.1.2023  inference: add A., A==>B. |- B. rule  and call rule in deriver
 #      DONE< test it with nal test file! >
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# op for testing
+proc op0(args:seq[TermObj]) =
+  echo("main: ^op0 was invoked")
+
+
+
+
+# PROTOTYPING
+block:
+  block:
+    var createdRegOp: RegisteredOpRef = makeOp(op0)
+    globalNarInstance.opRegistry.ops["^a0"] = createdRegOp
+
+  block:
+    var createdRegOp: RegisteredOpRef = makeOp(op0)
+    globalNarInstance.opRegistry.ops["^a1"] = createdRegOp
+
+
+  var r0 = parseNarsese("(<(SELF*v0) --> ^a0 >,  <(SELF*v0) --> ^a1>).")
+
+
+
+  var z0: PendingExecQueueItemRef = PendingExecQueueItemRef(term:r0.term, link:nil)
+
+  # add pending exec for testing
+  pendingExecQueue.add(z0)
+
+
+
+  block:
+    # send signal
+    internalNotifyPutPendingExecQueueItem(z0)
+
+
+  block:
+    echo("//////")
+
+    var tt0: TermObj = parseNarsese("< (SELF*v0) --> ^a0 >.").term
+
+    # actual testing
+    notifyDeferedOpExecFinished(tt0, tt0)
+
+  block:
+    echo("//////")
+
+    var tt0: TermObj = parseNarsese("< ({SELF}*v0) --> ^a1 >").term
+
+    # actual testing
+    notifyDeferedOpExecFinished(tt0, tt0)
+
+  block:
+    echo("/// FIN")
+
+
 
 
 

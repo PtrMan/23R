@@ -266,3 +266,11 @@ func termFoldSeq*(term: TermObj): TermObj =
   unwindRec(term)
 
   return termMkSeq2(items)
+
+
+func checkIsSeq*(t: TermObj): bool =
+  case t.type0
+  of sequence:
+    return true
+  else:
+    return false
