@@ -270,11 +270,14 @@ proc tokenize*(str:string): seq[Token0Obj] =
     if iChar == '-':
       if acc=="-": # -->
         discard
-      else:
+      elif acc=="":
         # special handling to parse <%%0-->X>   etc.
+        # also to parse "-size"
         flush()
         acc="-"
         continue
+      else:
+        discard
 
     elif iChar == '>':
       if acc == "--":
