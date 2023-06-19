@@ -52,3 +52,7 @@ This system is a implementation of a non-axiomatic reasoning system. It comes wi
 ### Wait! Why doesn't this come pre-packaged with 'batteries included' like Python or a webbrowser etc.?
 
 To keep this project/repository simple as in keep-it-small-stupid (KISS).
+
+### Documentation
+
+Technical documentation (draft) [link](https://www.overleaf.com/read/bchhmpgxkqgs)
