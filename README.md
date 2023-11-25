@@ -49,6 +49,8 @@ The formal language to communicate with the system with non-natural language is 
 
 This system is a implementation of a non-axiomatic reasoning system. It comes with some additions on top of the NARS-theory which are inspired by relational-frame theory.
 
+The logic follows non-axiomatic logic, which is described in serveral publications such as [(1)](https://books.google.de/books?hl=en&lr=&id=GY-6CgAAQBAJ&oi=fnd&pg=PR7&dq=Non-Axiomatic+Logic+%E2%80%94+A+Model+of+Intelligent+Reasoning&ots=GZkETxFp6j&sig=PlMwS21VhH4dT8w8cE_WuQhb0Tw&redir_esc=y#v=onepage&q=Non-Axiomatic%20Logic%20%E2%80%94%20A%20Model%20of%20Intelligent%20Reasoning&f=false).
+
 ### Wait! Why doesn't this come pre-packaged with 'batteries included' like Python or a webbrowser etc.?
 
 To keep this project/repository simple as in keep-it-small-stupid (KISS).
@@ -56,3 +58,8 @@ To keep this project/repository simple as in keep-it-small-stupid (KISS).
 ### Documentation
 
 Technical documentation (draft) [link](https://www.overleaf.com/read/bchhmpgxkqgs)
+
+### scientific references
+
+(1) [Non-axiomatic logic: A model of intelligent reasoning](https://books.google.de/books?hl=en&lr=&id=GY-6CgAAQBAJ&oi=fnd&pg=PR7&dq=Non-Axiomatic+Logic+%E2%80%94+A+Model+of+Intelligent+Reasoning&ots=GZkETxFp6j&sig=PlMwS21VhH4dT8w8cE_WuQhb0Tw&redir_esc=y#v=onepage&q=Non-Axiomatic%20Logic%20%E2%80%94%20A%20Model%20of%20Intelligent%20Reasoning&f=false) <br />
+
