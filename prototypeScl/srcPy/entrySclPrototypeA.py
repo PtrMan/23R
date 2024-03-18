@@ -22,6 +22,65 @@ def ensureType(v, type_):
 #########################
 
 
+#
+class ResourceBoundedTableEntry(object):
+    def __init__(self):
+        self.items = []
+
+
+# table maintainer with bounds on memory
+class ResourceBoundedTable(object):
+    def __init__(self, maxCapacity):
+        self.dat = {}  # table content
+
+        self.maxCapacity = maxCapacity  # max capacity of items in the table
+
+    # adds the item with value under the key
+    def put(self, key, value):
+        if key in self.dat:
+            # TODO LOW  :  we simply add it here independent on if the content already exists or not!
+            #              we MUST call a method here which checks if the same data already exists
+
+            self.dat[key].items.append(value)
+        else:
+            createdTableEntry = ResourceBoundedTableEntry()
+            createdTableEntry.items.append(value)
+            self.dat[key] = createdTableEntry
+
+    def maintainResourceBounds(self):
+        # algorithm
+        # 1) extract all items from all entries in the table
+        # 2) sort them by decreasing order by calling self._retPriorityOfItem() for each item
+        # 3) limit length of list to self.maxCapacity
+        # 4) clear self.dat and put items from list back into self.dat
+
+        allItems = []
+        for key, tableEntry in self.dat.items():
+            allItems.extend(tableEntry.items)
+
+        # Sort items by priority using _retPriorityOfItem (assuming priority exists)
+        sortedItems = sorted(allItems, key=self._retPriorityOfItem, reverse=True)
+
+        # Truncate list to max capacity
+        self.dat = {}
+        for item in sortedItems[:self.maxCapacity]:
+            self.put(item.key, item)
+
+    # return all as a list
+    def retAllItems(self):
+        allItems = []
+        for key, tableEntry in self.dat.items():
+            allItems.extend(tableEntry.items)
+        return allItems
+
+    def _retPriorityOfItem(self, item):
+        return 0.0  # TODO LOW
+
+#########################
+#########################
+#########################
+
+
 # class was created on 7.3.2023
 class SclScheduler(object):
     def __init__(self):
@@ -50,6 +109,7 @@ class SclScheduler(object):
 def schedulerTick(scheduler, globalCtx):
     scheduler.cachedSystemClockTime = time.time() - scheduler.systemStartAbsoluteTime
 
+
     # * iterate over jobs to move them to active tasks 
     idx0 = len(scheduler.pendingInactiveTasks)-1
     while idx0 >= 0:
@@ -63,13 +123,14 @@ def schedulerTick(scheduler, globalCtx):
 
         idx0-=1
     
+
     # * select task with the highest priority
     selTask = None
     # TODO LOW  :  select task by highest utility
     if len(scheduler.activeTasks) > 0:
         selTask = scheduler.activeTasks[0]
         del scheduler.activeTasks[0] # remove from set of tasks
-
+    
 
     # * actual processing of task
     if selTask is not None: # has a task been select for execution?
@@ -87,6 +148,7 @@ def schedulerTick(scheduler, globalCtx):
 
 
 
+            pass 
             #print(goaltoProcess) # DBG DBG DBG
 
             # * call into "RuleManager" to apply all rules backward for a instance of goalA
@@ -97,17 +159,25 @@ def schedulerTick(scheduler, globalCtx):
             # * add "derivedInputTypedInsts" as sub-goals to the system
             #   (because we need to process the derived sub-goals at a later point)
             for iInputTypedInst in inputTypedInsts:
+
+                derivedGoalTypedInst = iInputTypedInst['derivedGoal']
                 
                 createdPendingTask = {}
                 createdPendingTask['activeFrom'] = 0.0 # set absolute time when the job will be added as active job
                 createdPendingTask['kind'] = 'goal' # job is to process a goal with backward-inference
-                createdPendingTask['val'] = iInputTypedInst # actual job is to process the goal with backward inference
+                createdPendingTask['val'] = derivedGoalTypedInst # actual job is to process the goal with backward inference
                 globalCtx.scheduler.pendingInactiveTasks.append(createdPendingTask)
 
+            # * add "SclEventDetector" detectors for every derived goal, so the system can detect the coresponding SclEvent
+            for iValue in inputTypedInsts:
+                iRule = iValue['rule']
+                createdEventDetector = SclEventDetector(iRule)
+
+                key = None # TODO LOW  :  what should be the key here? probably the typename is the best option here
+                globalCtx.eventDetectors.put(None, createdEventDetector)
 
 
-
-
+            '''
             # we maintain "TypedInst" which we have to process as 'spikes'. This simplifies resource management and queueing
             queuedTypedInstSpikes = []
 
@@ -116,13 +186,16 @@ def schedulerTick(scheduler, globalCtx):
             for iInputTypedInsts in inputTypedInsts:
                 queuedTypedInstSpikes.append(iInputTypedInsts)
 
+            '''
 
+            '''
             # * notify eventManager about all 'spikes' in "queuedTypedInstSpikes"
             for iInputTypedInsts in queuedTypedInstSpikes:
 
                 iInputTypedInstAsEvent = SclEvent(iInputTypedInsts) # wrap TypedInst into event to be processed with eventmanager
                 globalCtx.eventManager.processEvent(iInputTypedInstAsEvent) # process the event
-            
+            '''
+
             # commented because not necessary
             #queuedTypedInstSpikes = [] # flush them because we did process the spikes
 
@@ -135,11 +208,17 @@ def schedulerTick(scheduler, globalCtx):
             # (commented because not used yet)
             #globalCtx.eventManager.processEvent(eventToProcess)
 
+            conclusionTypedInsts = []
+
             # process the event
-            # 
-            # ( we collect derived events from the forward process )
-            inputTypedInst = eventToProcess.payload
-            conclusionTypedInsts = globalCtx.ruleManager.applyForwardAll(inputTypedInst)
+            for iEventDetector in globalCtx.eventDetectors.retAllItems():
+                if iEventDetector.checkPatternMatch(eventToProcess): # check if event matches to pattern of the actual detector
+                    
+                    # ( we collect derived events from the forward process )
+                    inputTypedInst = eventToProcess.payload
+
+                    conclusionTypedInstsThis = iEventDetector.rule.applyForward(inputTypedInst)
+                    conclusionTypedInsts += [conclusionTypedInstsThis]
 
             # now we need to add derived events as jobs to get processed
             for iConclusionTypedInst in conclusionTypedInsts:
@@ -192,15 +271,6 @@ if False:
 
 
 
-
-
-
-
-
-# reward a job for completion or failure
-# /param reward 1 or -1
-def rewardJob(jobDat, reward):
-    jobDat['rewardInt'] += reward
 
 
 
@@ -261,7 +331,7 @@ class SclRule(object):
 ########################################
 ## Event management: SclEvent + EventWatchdog + ScnEventManager
 
-## AREA-like of stuff to integrate
+## AERA-like
 
 class SclEvent(object):
     def __init__(self, payload):
@@ -269,6 +339,29 @@ class SclEvent(object):
         self.payload = payload
 
 
+##
+# a "SclEventDetector" pattern matches an incomming "SclEvent" to the pattern for which the system is looking for and sends the "SclEvent" for further processing on a successful match.
+#
+#
+class SclEventDetector(object):
+    # /param rule rule which has to be applied when the pattern matching succeeded
+    def __init__(self, rule):
+        self.rule = rule
+
+    # called to check if the pattern matches
+    # /param e is a "SclEvent"
+    def checkPatternMatch(self, e):
+        if e.payload.type_.typeName != self.rule.inputType.typeName:
+            return False # types are not the same, can't match
+        
+        # TODO LOW  :  here we are doing more pattern matching!
+
+        return True
+    
+
+
+
+'''
 # IDEA here: SclEventWatchdog is a 'detector' which gets triggered when a SclEvent of type SclType did occur.
 #            the purpose is so that we can invoke a function to do forward inference.
 class SclEventWatchdog(object):
@@ -284,6 +377,7 @@ class SclEventWatchdog(object):
     def trigger(self, arg):
         ensureType(arg, SclEvent)
         return self.fn(arg) # invoke actual function which was registered to get invoked when ever a SclEvent with the right type did occur
+
 
 
 class SclEventManager(object):
@@ -309,7 +403,7 @@ class SclEventManager(object):
         print(f'[trace] SclEventManager.processEvent() EXIT')
 
         return derivedConclusionEvents
-
+'''
 
 
 
@@ -321,7 +415,7 @@ class SclEventManager(object):
 
 # * holds rules
 # * returns rules which match a given "Type"
-class RuleManager(object):
+class SclRuleManager(object):
     def __init__(self):
         # set of all rules in the system
         self.ruleSet = []
@@ -348,7 +442,7 @@ class RuleManager(object):
         res = []
         for iRule in applicableRules:
             thisRes = iRule.applyBackward(output_)
-            res.append(thisRes)
+            res.append({'derivedGoal':thisRes, 'rule':iRule})
         
         return res
 
@@ -407,7 +501,7 @@ class PlanningTestARuleFunction(object):
         # NOTE  we do forward planning - which is the execution of the implemented functionality
 
         print('[trace] PlanningTestARuleFunction.applyForward() called')
-#
+
         #  return a actual "TypedInst"
         outputTypedInst = TypedInst(Type('goalA'))
         return outputTypedInst
@@ -522,6 +616,12 @@ class AppRunOnlineLearningHopfieldLmToProcessTextRuleFunction(object):
 
         print('[trace] AppRunOnlineLearningHopfieldLmToProcessTextRuleFunction.applyForward() called')
 
+
+
+
+
+
+
         #print(f'[info ] payload={forwardInput.dat}')
 
         # question: 'What is Bifidobacterium bifidum?'
@@ -624,39 +724,33 @@ class AppRunOnlineLearningHopfieldLmToProcessTextRuleFunction(object):
 
 
 
-# commented because not integrated/used yet
-'''
-# a "SclEventDetector" pattern matches an incomming "SclEvent" to the pattern for which the system is looking for and sends the "SclEvent" for further processing on a successful match.
-#
-#
-class SclEventDetector(object):
-    def __init__(self, globalCtx):
-        self.globalCtx = globalCtx
-    
-    def __call__(self, event):
-        ensureType(event, SclEvent)
 
-        print('[trace] SclEventDetector was invoked!')
-'''
 
 
 
 class GlobalCtx(object):
     def __init__(self):
         self.scheduler = SclScheduler()
-        self.ruleManager = RuleManager()
-        self.eventManager = SclEventManager()
+        self.ruleManager = SclRuleManager()
+        #self.eventManager = SclEventManager()
 
 
         # set of 'SclEventDetector's for which the system is looking for.
         # 
         # 
         # # commented because not integrated/used yet
-        # maxCapacityEventDetectors = 1000
-        # self.eventDetectors = ResourceBoundedTableEntry(maxCapacityEventDetectors)
+        maxCapacityEventDetectors = 1000
+        self.eventDetectors = ResourceBoundedTable(maxCapacityEventDetectors)
 
 
-
+'''
+# /param e "SclEvent" to check
+def processEvent_TODOINTEGRATEME(globalCtx, e):
+    for iEventDetector in globalCtx.eventDetectors:
+        if iEventDetector.checkPatternMatch(e): # check if event matches to pattern of the actual detector
+            # now we call the actual detector to process the event
+            iEventDetector(e)
+'''
 
 
 
@@ -701,33 +795,6 @@ if True: # codeblock
 
 
 
-    # rule for sub-goaling of a goal of type 'goalA' to type 'autofire'
-    createdRule = SclRule(
-        Type('clockTickA'), # input type
-        Type('goalA'), # output type
-        PlanningTestARuleFunction() # function which will be used for forward/backward planning
-    )
-    globalCtx.ruleManager.ruleSet.append(createdRule)
-
-    # rule for generating failable result
-    createdRule = SclRule(
-        Type('a0'), # input type
-        Type('failableA'), # output type
-        ReliabilityTestBRuleFunction()
-    )
-    globalCtx.ruleManager.ruleSet.append(createdRule)
-
-    # rule for processing failable result
-    createdRule = SclRule(
-        Type('failableA'),
-        Type('rootGoal'),
-        FailableConsumerTestBRuleFunction()
-    )
-    globalCtx.ruleManager.ruleSet.append(createdRule)
-
-
-
-
 
 
 
@@ -751,6 +818,33 @@ if True: # codeblock
 
 
     if entryName == 'testing':
+
+        # rule for sub-goaling of a goal of type 'goalA' to type 'autofire'
+        createdRule = SclRule(
+            Type('clockTickA'), # input type
+            Type('goalA'), # output type
+            PlanningTestARuleFunction() # function which will be used for forward/backward planning
+        )
+        globalCtx.ruleManager.ruleSet.append(createdRule)
+
+        # rule for generating failable result
+        createdRule = SclRule(
+            Type('a0'), # input type
+            Type('failableA'), # output type
+            ReliabilityTestBRuleFunction()
+        )
+        globalCtx.ruleManager.ruleSet.append(createdRule)
+
+        # rule for processing failable result
+        createdRule = SclRule(
+            Type('failableA'),
+            Type('rootGoal'),
+            FailableConsumerTestBRuleFunction()
+        )
+        globalCtx.ruleManager.ruleSet.append(createdRule)
+
+
+
         if True: # codeblock
             # create actual goal to be processed and put it into a task which will get scheduled by the scheduler
 
@@ -818,6 +912,24 @@ if True: # codeblock
 
 
 
+        goalA = TypedInst(Type('processTextWithLm'))
+        goalA.dat = None  # it currently doesnt have any data
+
+        createdPendingTask = {}
+        createdPendingTask['activeFrom'] = 0.0  # set absolute time when the job will be added as active job
+        createdPendingTask['kind'] = 'goal'  # job is to process a goal with backward-inference
+        createdPendingTask['val'] = goalA  # actual job is to process the goal with backward inference
+        globalCtx.scheduler.pendingInactiveTasks.append(createdPendingTask)
+
+        while True:
+            # HACKY
+            if globalCtx.scheduler.cachedSystemClockTime > 0.5:
+                break
+
+            schedulerTick(globalCtx.scheduler, globalCtx)
+
+
+
         # put for running the LM the event SclEvent:a1 into the system
         eventA = SclEvent(TypedInst(Type('a1')))
         createdPendingJob = {}
@@ -870,11 +982,9 @@ if True: # codeblock
 
 
 
-# TODO  :  implement some triggering mechanism with a hashtable by type of the event where forward inference is only done if it occurs in the table
+# HALFDONE  :  implement some triggering mechanism with a hashtable by type of the event where forward inference is only done if it occurs in the table
 #    TODO  :  the table has to be maintained under AIKR!
-
-
-
+#        TODO  :  call into maintaining of table every X seconds
 
 
 
@@ -912,55 +1022,18 @@ if True: # codeblock
 
 
 
+''' commented because not used
+
+# reward a job for completion or failure
+# /param reward 1 or -1
+def rewardJob(jobDat, reward):
+    jobDat['rewardInt'] += reward
+'''
+
+
 
 
 ################## STAGING AREA (things to add soon)
-
-
-# 
-class ResourceBoundedTableEntry(object):
-    def __init__(self):
-        self.items = []
-
-# table maintainer with bounds on memory
-class ResourceBoundedTable(object):
-    def __init__(self, maxCapacity):
-        self.dat = {} # table content
-
-        self.maxCapacity = maxCapacity # max capacity of items in the table
-
-    # adds the item with value under the key
-    def put(self, key, value):
-        if key in self.dat:
-            # TODO LOW  :  we simply add it here independent on if the content already exists or not!
-            #              we MUST call a method here which checks if the same data already exists
-
-            self.dat[key].items.append(value)
-        else:
-            createdTableEntry = ResourceBoundedTableEntry()
-            self.dat[key] = createdTableEntry
-
-    def maintainResourceBounds(self):
-        # algorithm
-        # 1) extract all items from all entries in the table
-        # 2) sort them by decreasing order by calling self._retPriorityOfItem() for each item
-        # 3) limit length of list to self.maxCapacity
-        # 4) clear self.dat and put items from list back into self.dat
-
-        allItems = []
-        for key, tableEntry in self.dat.items():
-            allItems.extend(tableEntry.items)
-
-        # Sort items by priority using _retPriorityOfItem (assuming priority exists)
-        sortedItems = sorted(allItems, key=self._retPriorityOfItem, reverse=True)
-
-        # Truncate list to max capacity
-        self.dat = {}
-        for item in sortedItems[:self.maxCapacity]:
-            self.put(item.key, item)
-
-    def _retPriorityOfItem(self, item):
-        return 0.0 # TODO LOW
 
 
 
