@@ -719,6 +719,42 @@ class AppRunOnlineLearningHopfieldLmToProcessTextRuleFunction(object):
 
 
 
+# function
+#
+# fetches text from a source (in our case the internet)
+class AppRunFetchTextRuleFunction(object):
+    def __init__(self):
+        pass
+    
+    def applyForward(self, forwardInput):
+        ensureType(forwardInput, TypedInst)
+
+        # NOTE  we do forward planning - which is the execution of the implemented functionality
+
+        print('[trace] AppRunFetchTextRuleFunction.applyForward() called')
+
+
+        # TODO TODO TODO TODO
+
+        # * now we return the answer
+
+        #  return a actual "TypedInst"
+        outputTypedInst = TypedInst(Type('a1'))
+        outputTypedInst.dat = None # no payload
+        return outputTypedInst
+    
+    def applyBackward(self, backwardOutput):
+        ensureType(backwardOutput, TypedInst)
+
+        if not (backwardOutput.type_.typeName == 'a1'):
+            raise InterpretationSoftError('must be of type a1')
+
+        # backward planning from "backwardOutput" to backward-input
+
+        backwardInput = TypedInst(Type('a2'))
+        backwardInput.dat = None # has no payload for backward planning
+        return backwardInput
+
 
 
 
@@ -909,6 +945,13 @@ if True: # codeblock
         globalCtx.ruleManager.ruleSet.append(createdRule)
 
 
+        createdRule = SclRule(
+            Type('a2'), # input type
+            Type('a1'), # output type
+            AppRunFetchTextRuleFunction()
+        )
+        globalCtx.ruleManager.ruleSet.append(createdRule)
+
 
 
 
@@ -931,7 +974,7 @@ if True: # codeblock
 
 
         # put for running the LM the event SclEvent:a1 into the system
-        eventA = SclEvent(TypedInst(Type('a1')))
+        eventA = SclEvent(TypedInst(Type('a2')))
         createdPendingJob = {}
         createdPendingJob['activeFrom'] = 0.0 # set absolute time when the job will be added as active job
         createdPendingJob['kind'] = 'event' # job is to process a event with forward-inference
