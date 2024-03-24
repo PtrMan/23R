@@ -625,7 +625,8 @@ class AppRunOnlineLearningHopfieldLmToProcessTextRuleFunction(object):
         #print(f'[info ] payload={forwardInput.dat}')
 
         # question: 'What is Bifidobacterium bifidum?'
-        prompt0 = 'Bifidobacterium bifidum is'
+        #prompt0 = 'Bifidobacterium bifidum is'
+        prompt0 = forwardInput.dat['answerBeginningHumanTxt']
         prompt0 = 'Y~'*(2**9) + prompt0 # hacky way to fill tokens
 
         # idea: use online learning hopfield LM to search for text
@@ -740,7 +741,7 @@ class AppRunFetchTextRuleFunction(object):
 
         #  return a actual "TypedInst"
         outputTypedInst = TypedInst(Type('a1'))
-        outputTypedInst.dat = None # no payload
+        outputTypedInst.dat = {'answerBeginningHumanTxt': forwardInput.dat['answerBeginningHumanTxt']} # data passthrough
         return outputTypedInst
     
     def applyBackward(self, backwardOutput):
@@ -974,7 +975,9 @@ if __name__ == "__main__":
 
 
         # put for running the LM the event SclEvent:a1 into the system
-        eventA = SclEvent(TypedInst(Type('a2')))
+        typedInst = TypedInst(Type('a2'))
+        typedInst.dat = {'answerBeginningHumanTxt':'Bifidobacterium bifidum is'} # data to pass around with the "TypedInst"
+        eventA = SclEvent(typedInst)
         createdPendingJob = {}
         createdPendingJob['activeFrom'] = 0.0 # set absolute time when the job will be added as active job
         createdPendingJob['kind'] = 'event' # job is to process a event with forward-inference
