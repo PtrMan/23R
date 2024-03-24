@@ -804,7 +804,7 @@ def processEvent_TODOINTEGRATEME(globalCtx, e):
 
 
 # MANUAL TEST for application of rule
-if True: # codeblock
+if __name__ == "__main__":
 
     # what is the name of the program entry we want to run?
     # REFACTOR LOW  :  this should be a python program parameter
