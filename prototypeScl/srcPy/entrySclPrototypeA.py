@@ -305,6 +305,7 @@ class SclRule(object):
         self.inputType = inputType
         self.outputType = outputType
         self.fn = fn
+        self.isStatic = False # is the rule removable by GC ?
 
     def applyForward(self, forwardInput):
         ensureType(forwardInput, TypedInst)
@@ -467,9 +468,31 @@ class SclRuleManager(object):
         return res
     
 
+# does GC of the rules
+def sclRulesGc(ruleManager):
+    # we order all rules by improtance and remove the least important rules
 
+    rulesWithImportance = []
+    for iRule in ruleManager.ruleSet:
+        # TODO< compute importance of the rule >
+        importance = 0.0
 
+        if iRule.isStatic:
+            importance = 1.0e20 # don't remove this rule because it is labeled as static
+        
+        rulesWithImportance.append((iRule, importance))
 
+    
+
+    sortedRulesWithImportance = sorted(rulesWithImportance, key=lambda tuple_: tuple_[1], reverse=True)
+
+    # Truncate list to max capacity
+    maxCapacity = 5000
+    sortedRulesWithImportance = sortedRulesWithImportance[:maxCapacity]
+
+    ruleManager.ruleSet = []
+    for iRule, importance in sortedRulesWithImportance:
+        ruleManager.ruleSet.append(iRule)
 
 
 
@@ -643,9 +666,12 @@ class AppRunOnlineLearningHopfieldLmToProcessTextRuleFunction(object):
             from transformers import GPT2Tokenizer, GPT2Model
             tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 
-            txtAll = '~'*500
+            txtAll = '~'*2048
             
 
+            '''
+            # commented because we don't read training data from LM from filesystem here anymore.
+            #    Instead we get it in the input SclEvent itself
 
             directoryWithTrainingDataPath = "C:\\Users\\rober\\fsRoot\\MYdata\\used_for_apsiringprotoagi"
 
@@ -668,8 +694,9 @@ class AppRunOnlineLearningHopfieldLmToProcessTextRuleFunction(object):
                             return None
                     
                     txtAll += readTextfileUtf8(fullPath)
+            '''
 
-
+            txtAll = forwardInput.dat['txtAll'] # grab text to be used as training data from request
 
             
             inputs = tokenizer(txtAll, return_tensors="pt")
@@ -780,6 +807,9 @@ class GlobalCtx(object):
         self.eventDetectors = ResourceBoundedTable(maxCapacityEventDetectors)
 
 
+        self.tickCnt = 0 # tick counter
+
+
 '''
 # /param e "SclEvent" to check
 def processEvent_TODOINTEGRATEME(globalCtx, e):
@@ -791,10 +821,18 @@ def processEvent_TODOINTEGRATEME(globalCtx, e):
 
 
 
+# "global" tick entry
+def sclTick(globalCtx):
+    schedulerTick(globalCtx.scheduler, globalCtx)
 
 
+    if (globalCtx.tickCnt % 50) == 0:
+        
+        # GC for rules
+        sclRulesGc(globalCtx.ruleManager)
+    
 
-
+    globalCtx.tickCnt += 1
 
 
 
@@ -1080,6 +1118,49 @@ def rewardJob(jobDat, reward):
 
 
 ################## STAGING AREA (things to add soon)
+
+
+class TransientRuleFunction(object):
+    def __init__(self, inputType, outputType):
+        ensureType(inputType, TypedInst)
+        ensureType(outputType, TypedInst)
+
+        self.inputType = inputType
+        self.outputType = outputType
+    
+    def applyForward(self, forwardInput):
+        ensureType(forwardInput, TypedInst)
+
+        print('[trace] TransientRuleFunction.applyForward() called')
+
+        # * now we return the answer
+
+        #  return a actual "TypedInst"
+        return self.outputType
+    
+    def applyBackward(self, backwardOutput):
+        ensureType(backwardOutput, TypedInst)
+
+        if not (backwardOutput.type_.typeName == self.outputType.typeName):
+            raise InterpretationSoftError(f'must be of type {self.outputType.typeName}')
+
+        # backward planning from "backwardOutput" to backward-input
+
+        backwardInput = TypedInst(self.inputType)
+        backwardInput.dat = None # has no payload for backward planning
+        return backwardInput
+
+
+# create rule based on two events which happened after each other
+def createRuleByTransientState(stateBefore, stateAfter):
+    ensureType(stateBefore, TypedInst)
+    ensureType(stateAfter, TypedInst)
+
+    # create rule which checks for exact equality of state before and after etc.
+    fn = TransientRuleFunction(stateBefore.type_, stateAfter.type_)
+
+    createdRule = SclRule(stateBefore.type_, stateAfter.type_, fn)
+    return createdRule
 
 
 
