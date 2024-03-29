@@ -269,8 +269,11 @@ if False:
 
 
 
+class SclUsageA(object):
+    def __init__(self):
+        self.v = 1.0 # usage value, in range [-inf;1.0]. 1.0 means that it's used a lot relative to all other given items
 
-
+# TODO LOW  :  add functions to manipulate "SclUsageA"
 
 
 
@@ -306,6 +309,8 @@ class SclRule(object):
         self.outputType = outputType
         self.fn = fn
         self.isStatic = False # is the rule removable by GC ?
+
+        self.usage = SclUsageA()
 
     def applyForward(self, forwardInput):
         ensureType(forwardInput, TypedInst)
@@ -474,8 +479,7 @@ def sclRulesGc(ruleManager):
 
     rulesWithImportance = []
     for iRule in ruleManager.ruleSet:
-        # TODO< compute importance of the rule >
-        importance = 0.0
+        importance = iRule.usage.v # importance : is simply the usage value of the rule
 
         if iRule.isStatic:
             importance = 1.0e20 # don't remove this rule because it is labeled as static
@@ -827,7 +831,7 @@ def sclTick(globalCtx):
 
 
     if (globalCtx.tickCnt % 50) == 0:
-        
+
         # GC for rules
         sclRulesGc(globalCtx.ruleManager)
     
