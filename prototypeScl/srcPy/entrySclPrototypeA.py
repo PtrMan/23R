@@ -288,6 +288,9 @@ class Type(object):
     def __init__(self, typeName):
         self.typeName = typeName
 
+    def __eq__(a, b):
+        return a.typeName == b.typeName
+
 # typed instantiation : holds data of a type "Type"
 class TypedInst(object):
     # /param type_ the type of type "Type"
@@ -321,6 +324,9 @@ class SclRule(object):
         ensureType(backwardOutput, TypedInst)
         
         return self.fn.applyBackward(backwardOutput)
+    
+    def __eq__(a, b):
+        return a.inputType == b.inputType and a.outputType == b.outputType and a.fn == b.fn and a.isStatic == b.isStatic
 
 
 
@@ -500,6 +506,57 @@ def sclRulesGc(ruleManager):
 
 
 
+
+
+
+
+
+
+
+
+
+
+class GlobalCtx(object):
+    def __init__(self):
+        self.scheduler = SclScheduler()
+        self.ruleManager = SclRuleManager()
+        #self.eventManager = SclEventManager()
+
+
+        # set of 'SclEventDetector's for which the system is looking for.
+        # 
+        # 
+        # # commented because not integrated/used yet
+        maxCapacityEventDetectors = 1000
+        self.eventDetectors = ResourceBoundedTable(maxCapacityEventDetectors)
+
+
+        self.tickCnt = 0 # tick counter
+
+
+'''
+# /param e "SclEvent" to check
+def processEvent_TODOINTEGRATEME(globalCtx, e):
+    for iEventDetector in globalCtx.eventDetectors:
+        if iEventDetector.checkPatternMatch(e): # check if event matches to pattern of the actual detector
+            # now we call the actual detector to process the event
+            iEventDetector(e)
+'''
+
+
+
+# "global" tick entry
+def sclTick(globalCtx):
+    schedulerTick(globalCtx.scheduler, globalCtx)
+
+
+    if (globalCtx.tickCnt % 50) == 0:
+
+        # GC for rules
+        sclRulesGc(globalCtx.ruleManager)
+    
+
+    globalCtx.tickCnt += 1
 
 
 
@@ -796,51 +853,6 @@ class AppRunFetchTextRuleFunction(object):
 
 
 
-class GlobalCtx(object):
-    def __init__(self):
-        self.scheduler = SclScheduler()
-        self.ruleManager = SclRuleManager()
-        #self.eventManager = SclEventManager()
-
-
-        # set of 'SclEventDetector's for which the system is looking for.
-        # 
-        # 
-        # # commented because not integrated/used yet
-        maxCapacityEventDetectors = 1000
-        self.eventDetectors = ResourceBoundedTable(maxCapacityEventDetectors)
-
-
-        self.tickCnt = 0 # tick counter
-
-
-'''
-# /param e "SclEvent" to check
-def processEvent_TODOINTEGRATEME(globalCtx, e):
-    for iEventDetector in globalCtx.eventDetectors:
-        if iEventDetector.checkPatternMatch(e): # check if event matches to pattern of the actual detector
-            # now we call the actual detector to process the event
-            iEventDetector(e)
-'''
-
-
-
-# "global" tick entry
-def sclTick(globalCtx):
-    schedulerTick(globalCtx.scheduler, globalCtx)
-
-
-    if (globalCtx.tickCnt % 50) == 0:
-
-        # GC for rules
-        sclRulesGc(globalCtx.ruleManager)
-    
-
-    globalCtx.tickCnt += 1
-
-
-
-
 
 
 
@@ -1124,23 +1136,89 @@ def rewardJob(jobDat, reward):
 ################## STAGING AREA (things to add soon)
 
 
-class TransientRuleFunction(object):
-    def __init__(self, inputType, outputType):
-        ensureType(inputType, TypedInst)
-        ensureType(outputType, TypedInst)
 
-        self.inputType = inputType
-        self.outputType = outputType
+
+
+
+# data for SclType:stateActionSeq
+class StateActionSeqDat(object):
+    def __init__(self, seq):
+        self.seq = seq
+
+def checkStateActionSeqDatSame(a, b):
+    ensureType(a, StateActionSeqDat)
+    ensureType(b, StateActionSeqDat)
+
+    if len(a.seq) != len(b.seq):
+        return False
+    
+    # we only handle here the symbolic states
+    # TODO LOW  :  implement check for sub-symbolic states!
+    for iIdx in range(len(a.seq)):
+        if a.seq[iIdx] != b.seq[iIdx]:
+            return False
+    
+    return True
+
+
+# SclFunction for SclRule for state transition
+#
+# forward/backward planning example:
+# [vz2, action2, vz1, action1, vz0]      SclTypename: stateActionSeq
+#   rule with function
+# [vz1, action1, vz0]                    SclTypename: stateActionSeq
+#   rule with function
+# [vz0]                                  SclTypename: stateActionSeq
+class SclStateActionSeqTransistionRuleFunction(object):
+    def __init__(self, stateActionSeqInDomain, stateActionSeqInCodomain):
+        ensureType(stateActionSeqInDomain, StateActionSeqDat)
+        ensureType(stateActionSeqInCodomain, StateActionSeqDat)
+
+        self.stateActionSeqInDomain = stateActionSeqInDomain
+        self.stateActionSeqInCodomain = stateActionSeqInCodomain
+
+        self.inputType = Type('stateActionSeq')
+        self.outputType = Type('stateActionSeq')
     
     def applyForward(self, forwardInput):
         ensureType(forwardInput, TypedInst)
 
-        print('[trace] TransientRuleFunction.applyForward() called')
+        print('[trace] SclStateActionSeqTransistionRuleFunction.applyForward() called')
+
+        if not (forwardInput.type_.typeName == self.inputType.typeName):
+            raise InterpretationSoftError(f'must be of type {self.inputType.typeName}')
+
+        if not isinstance(forwardInput.dat, StateActionSeqDat):
+            print('a')
+            return None # return because we expected this datatype
+        
+        if len(self.stateActionSeqInDomain.seq) <= 1:
+            print('b')
+            return None # we can't do forward planning if we don't have a pre-condition+action+effect
+        
+        # now we need to check if the state in forward input is exactly the same!
+        if not checkStateActionSeqDatSame(forwardInput.dat, StateActionSeqDat([self.stateActionSeqInDomain.seq[0]])):
+            print('c')
+            return None
+        
+        # extract the seq from the "forwardInput"
+        stateActionSeq = self.stateActionSeqInDomain.seq
+
+        # now we execute the actual action
+        action = stateActionSeq[1]
+        # TODO TODO TODO TODO  :  enact actual action
+
+        # now we cut away the pre-condition and the action
+        stateActionSeq = stateActionSeq[2:]
 
         # * now we return the answer
+        returnedCodomainDat = StateActionSeqDat(stateActionSeq)
+
+        returnedtypedInst = TypedInst(Type('stateActionSeq'))
+        returnedtypedInst.dat = returnedCodomainDat
 
         #  return a actual "TypedInst"
-        return self.outputType
+        return returnedtypedInst
     
     def applyBackward(self, backwardOutput):
         ensureType(backwardOutput, TypedInst)
@@ -1150,21 +1228,48 @@ class TransientRuleFunction(object):
 
         # backward planning from "backwardOutput" to backward-input
 
+        # codomain and backwardOutput must be exactly the same for backward planning!
+        if not checkStateActionSeqDatSame(backwardOutput.dat, self.stateActionSeqInCodomain):
+            return None # not the same - thus we can't do backward planning with this particular rule!
+
         backwardInput = TypedInst(self.inputType)
-        backwardInput.dat = None # has no payload for backward planning
+        backwardInput.dat = self.stateActionSeqInDomain
         return backwardInput
 
 
-# create rule based on two events which happened after each other
-def createRuleByTransientState(stateBefore, stateAfter):
-    ensureType(stateBefore, TypedInst)
-    ensureType(stateAfter, TypedInst)
 
-    # create rule which checks for exact equality of state before and after etc.
-    fn = TransientRuleFunction(stateBefore.type_, stateAfter.type_)
+if False: # code for manual test of forward inference with this SclRule
 
-    createdRule = SclRule(stateBefore.type_, stateAfter.type_, fn)
-    return createdRule
+    domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
+    codomainDat = StateActionSeqDat(['v1'])
+
+    fn = SclStateActionSeqTransistionRuleFunction(domainDat, codomainDat)
+
+    # manually testing forward planning
+
+    forwardInput = TypedInst(Type('stateActionSeq'))
+    forwardInput.dat = StateActionSeqDat(['v0'])
+
+    forwardOutput = fn.applyForward(forwardInput)
+
+
+if False: # code for manual test of backward inference with this SclRule
+
+    domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
+    codomainDat = StateActionSeqDat(['v1'])
+
+    fn = SclStateActionSeqTransistionRuleFunction(domainDat, codomainDat)
+
+    # manually testing forward planning
+
+    backwardOutput = TypedInst(Type('stateActionSeq'))
+    backwardOutput.dat = StateActionSeqDat(['v1'])
+
+    backwardInput = fn.applyBackward(backwardOutput)
+
+
+# TODO< do actual learning/planning with "SclStateActionSeqTransistionRuleFunction" >
+
 
 
 
