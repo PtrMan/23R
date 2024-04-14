@@ -858,12 +858,189 @@ class AppRunFetchTextRuleFunction(object):
 
 
 
+
+
+
+
+
+# data for SclType:stateActionSeq
+class StateActionSeqDat(object):
+    def __init__(self, seq):
+        self.seq = seq
+
+def checkStateActionSeqDatSame(a, b):
+    ensureType(a, StateActionSeqDat)
+    ensureType(b, StateActionSeqDat)
+
+    if len(a.seq) != len(b.seq):
+        return False
+    
+    # we only handle here the symbolic states
+    # TODO LOW  :  implement check for sub-symbolic states!
+    for iIdx in range(len(a.seq)):
+        if a.seq[iIdx] != b.seq[iIdx]:
+            return False
+    
+    return True
+
+
+# SclFunction for SclRule for state transition
+#
+# forward/backward planning example:
+# [vz2, action2, vz1, action1, vz0]      SclTypename: stateActionSeq
+#   rule with function
+# [vz1, action1, vz0]                    SclTypename: stateActionSeq
+#   rule with function
+# [vz0]                                  SclTypename: stateActionSeq
+class SclStateActionSeqTransistionRuleFunction(object):
+    def __init__(self, stateActionSeqInDomain, stateActionSeqInCodomain):
+        ensureType(stateActionSeqInDomain, StateActionSeqDat)
+        ensureType(stateActionSeqInCodomain, StateActionSeqDat)
+
+        self.stateActionSeqInDomain = stateActionSeqInDomain
+        self.stateActionSeqInCodomain = stateActionSeqInCodomain
+
+        self.inputType = Type('stateActionSeq')
+        self.outputType = Type('stateActionSeq')
+    
+    def applyForward(self, forwardInput):
+        ensureType(forwardInput, TypedInst)
+
+        print('[trace] SclStateActionSeqTransistionRuleFunction.applyForward() called')
+
+        if not (forwardInput.type_.typeName == self.inputType.typeName):
+            raise InterpretationSoftError(f'must be of type {self.inputType.typeName}')
+
+        if not isinstance(forwardInput.dat, StateActionSeqDat):
+            print('a')
+            return None # return because we expected this datatype
+        
+        if len(self.stateActionSeqInDomain.seq) <= 1:
+            print('b')
+            return None # we can't do forward planning if we don't have a pre-condition+action+effect
+        
+        # now we need to check if the state in forward input is exactly the same!
+        if not checkStateActionSeqDatSame(forwardInput.dat, StateActionSeqDat([self.stateActionSeqInDomain.seq[0]])):
+            print('c')
+            return None
+        
+        # extract the seq from the "forwardInput"
+        stateActionSeq = self.stateActionSeqInDomain.seq
+
+        # now we execute the actual action
+        action = stateActionSeq[1]
+        # TODO TODO TODO TODO  :  enact actual action
+
+        # now we cut away the pre-condition and the action
+        stateActionSeq = stateActionSeq[2:]
+
+        # * now we return the answer
+        returnedCodomainDat = StateActionSeqDat(stateActionSeq)
+
+        returnedtypedInst = TypedInst(Type('stateActionSeq'))
+        returnedtypedInst.dat = returnedCodomainDat
+
+        #  return a actual "TypedInst"
+        return returnedtypedInst
+    
+    def applyBackward(self, backwardOutput):
+        ensureType(backwardOutput, TypedInst)
+
+        if not (backwardOutput.type_.typeName == self.outputType.typeName):
+            raise InterpretationSoftError(f'must be of type {self.outputType.typeName}')
+
+        # backward planning from "backwardOutput" to backward-input
+
+        # codomain and backwardOutput must be exactly the same for backward planning!
+        if not checkStateActionSeqDatSame(backwardOutput.dat, self.stateActionSeqInCodomain.dat):
+            return None # not the same - thus we can't do backward planning with this particular rule!
+
+        backwardInput = TypedInst(self.inputType)
+        backwardInput.dat = self.stateActionSeqInDomain
+        return backwardInput
+
+
+
+if False: # code for manual test of forward inference with this SclRule
+
+    domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
+    codomainDat = StateActionSeqDat(['v1'])
+
+    fn = SclStateActionSeqTransistionRuleFunction(domainDat, codomainDat)
+
+    # manually testing forward planning
+
+    forwardInput = TypedInst(Type('stateActionSeq'))
+    forwardInput.dat = StateActionSeqDat(['v0'])
+
+    forwardOutput = fn.applyForward(forwardInput)
+
+
+if False: # code for manual test of backward inference with this SclRule
+
+    domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
+    codomainDat = StateActionSeqDat(['v1'])
+
+    fn = SclStateActionSeqTransistionRuleFunction(domainDat, codomainDat)
+
+    # manually testing forward planning
+
+    backwardOutput = TypedInst(Type('stateActionSeq'))
+    backwardOutput.dat = StateActionSeqDat(['v1'])
+
+    backwardInput = fn.applyBackward(backwardOutput)
+
+
+
+
+def learnPreconditionActionConsequence(condition, operation, consequence,  globalCtx):
+    #condition = 'a'
+    #operation = 'op0'
+    #consequence = 'b'
+
+    stateActionSeqInDomain = StateActionSeqDat([condition, operation, consequence]) # build the domain which is state-action-state sequence
+    stateActionSeqInCodomain = StateActionSeqDat([consequence]) # build the codomain which is only the consequence
+    createdRuleFunction = SclStateActionSeqTransistionRuleFunction(stateActionSeqInDomain, stateActionSeqInCodomain) # create the transition rule
+
+    # create the rule
+    createdRule = SclRule(
+        Type('stateActionSeq'), # input type
+        Type('stateActionSeq'), # output type
+        createdRuleFunction
+    )
+
+    # now add the created rule for learning
+    globalCtx.ruleManager.ruleSet.append(createdRule)
+
+    # DBG
+    print(f'[] added sclRule with fn=SclStateActionSeqTransistionRuleFunction')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # MANUAL TEST for application of rule
 if __name__ == "__main__":
 
     # what is the name of the program entry we want to run?
     # REFACTOR LOW  :  this should be a python program parameter
-    entryName = 'appUseLm'
+    #entryName = 'appUseLm'
+    entryName = 'manualTestLearnPrecondActionConsequenceA' # test to learn precondition+action+consequence successfully
 
 
 
@@ -906,9 +1083,32 @@ if __name__ == "__main__":
     # ** for that we have to set the time to the current time
     globalCtx.scheduler.systemStartAbsoluteTime = time.time()
 
+    if entryName == 'manualTestLearnPrecondActionConsequenceA':
+        # learn action sequence to get to goal state
+        condition = 'a'
+        action = 'act0'
+        consequence = 'b'
+        learnPreconditionActionConsequence(condition, action, consequence,    globalCtx)
+
+        # now we add a goal to test backward planning      StateActionSeqDat(['b']) 
+        # TODO  :  add goal with StateActionSeqDat(['b']) 
+
+        # now we do backward inference
+        # TODO  :  
+
+        # now we do add occurrence of even which is condition     StateActionSeqDat(['a'])
+        # TODO  :
+
+        # now we do forward inference
+        # TODO
+
+        # TODO  :  also check if the forward inference gets processed correctly by adding debug code to it!!!
 
 
-    if entryName == 'testing':
+
+
+
+    elif entryName == 'testing':
 
         # rule for sub-goaling of a goal of type 'goalA' to type 'autofire'
         createdRule = SclRule(
@@ -1139,137 +1339,12 @@ def rewardJob(jobDat, reward):
 
 
 
-
-# data for SclType:stateActionSeq
-class StateActionSeqDat(object):
-    def __init__(self, seq):
-        self.seq = seq
-
-def checkStateActionSeqDatSame(a, b):
-    ensureType(a, StateActionSeqDat)
-    ensureType(b, StateActionSeqDat)
-
-    if len(a.seq) != len(b.seq):
-        return False
-    
-    # we only handle here the symbolic states
-    # TODO LOW  :  implement check for sub-symbolic states!
-    for iIdx in range(len(a.seq)):
-        if a.seq[iIdx] != b.seq[iIdx]:
-            return False
-    
-    return True
+# TODO  :  test learnPreconditionActionConsequence()
 
 
-# SclFunction for SclRule for state transition
-#
-# forward/backward planning example:
-# [vz2, action2, vz1, action1, vz0]      SclTypename: stateActionSeq
-#   rule with function
-# [vz1, action1, vz0]                    SclTypename: stateActionSeq
-#   rule with function
-# [vz0]                                  SclTypename: stateActionSeq
-class SclStateActionSeqTransistionRuleFunction(object):
-    def __init__(self, stateActionSeqInDomain, stateActionSeqInCodomain):
-        ensureType(stateActionSeqInDomain, StateActionSeqDat)
-        ensureType(stateActionSeqInCodomain, StateActionSeqDat)
+'''
 
-        self.stateActionSeqInDomain = stateActionSeqInDomain
-        self.stateActionSeqInCodomain = stateActionSeqInCodomain
-
-        self.inputType = Type('stateActionSeq')
-        self.outputType = Type('stateActionSeq')
-    
-    def applyForward(self, forwardInput):
-        ensureType(forwardInput, TypedInst)
-
-        print('[trace] SclStateActionSeqTransistionRuleFunction.applyForward() called')
-
-        if not (forwardInput.type_.typeName == self.inputType.typeName):
-            raise InterpretationSoftError(f'must be of type {self.inputType.typeName}')
-
-        if not isinstance(forwardInput.dat, StateActionSeqDat):
-            print('a')
-            return None # return because we expected this datatype
-        
-        if len(self.stateActionSeqInDomain.seq) <= 1:
-            print('b')
-            return None # we can't do forward planning if we don't have a pre-condition+action+effect
-        
-        # now we need to check if the state in forward input is exactly the same!
-        if not checkStateActionSeqDatSame(forwardInput.dat, StateActionSeqDat([self.stateActionSeqInDomain.seq[0]])):
-            print('c')
-            return None
-        
-        # extract the seq from the "forwardInput"
-        stateActionSeq = self.stateActionSeqInDomain.seq
-
-        # now we execute the actual action
-        action = stateActionSeq[1]
-        # TODO TODO TODO TODO  :  enact actual action
-
-        # now we cut away the pre-condition and the action
-        stateActionSeq = stateActionSeq[2:]
-
-        # * now we return the answer
-        returnedCodomainDat = StateActionSeqDat(stateActionSeq)
-
-        returnedtypedInst = TypedInst(Type('stateActionSeq'))
-        returnedtypedInst.dat = returnedCodomainDat
-
-        #  return a actual "TypedInst"
-        return returnedtypedInst
-    
-    def applyBackward(self, backwardOutput):
-        ensureType(backwardOutput, TypedInst)
-
-        if not (backwardOutput.type_.typeName == self.outputType.typeName):
-            raise InterpretationSoftError(f'must be of type {self.outputType.typeName}')
-
-        # backward planning from "backwardOutput" to backward-input
-
-        # codomain and backwardOutput must be exactly the same for backward planning!
-        if not checkStateActionSeqDatSame(backwardOutput.dat, self.stateActionSeqInCodomain):
-            return None # not the same - thus we can't do backward planning with this particular rule!
-
-        backwardInput = TypedInst(self.inputType)
-        backwardInput.dat = self.stateActionSeqInDomain
-        return backwardInput
-
-
-
-if False: # code for manual test of forward inference with this SclRule
-
-    domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
-    codomainDat = StateActionSeqDat(['v1'])
-
-    fn = SclStateActionSeqTransistionRuleFunction(domainDat, codomainDat)
-
-    # manually testing forward planning
-
-    forwardInput = TypedInst(Type('stateActionSeq'))
-    forwardInput.dat = StateActionSeqDat(['v0'])
-
-    forwardOutput = fn.applyForward(forwardInput)
-
-
-if False: # code for manual test of backward inference with this SclRule
-
-    domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
-    codomainDat = StateActionSeqDat(['v1'])
-
-    fn = SclStateActionSeqTransistionRuleFunction(domainDat, codomainDat)
-
-    # manually testing forward planning
-
-    backwardOutput = TypedInst(Type('stateActionSeq'))
-    backwardOutput.dat = StateActionSeqDat(['v1'])
-
-    backwardInput = fn.applyBackward(backwardOutput)
-
-
-# TODO< do actual learning/planning with "SclStateActionSeqTransistionRuleFunction" >
-
+'''
 
 
 
