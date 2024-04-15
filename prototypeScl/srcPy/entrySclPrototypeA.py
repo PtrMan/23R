@@ -300,6 +300,12 @@ class TypedInst(object):
         self.dat = None # actual data
         
         pass
+    
+    @staticmethod
+    def makeWithDat(type_, dat):
+        res = TypedInst(type_)
+        res.dat = dat
+        return res
 
 # "rule" as explained in book "The Road to General Intelligence"
 # a rule is a function which transforms a input datum of a fixed type to a output datum of a fixed type
@@ -900,8 +906,8 @@ class SclStateActionSeqTransistionRuleFunction(object):
         self.stateActionSeqInDomain = stateActionSeqInDomain
         self.stateActionSeqInCodomain = stateActionSeqInCodomain
 
-        self.inputType = Type('stateActionSeq')
-        self.outputType = Type('stateActionSeq')
+        self.inputType = Type('StateActionSeqDat')
+        self.outputType = Type('StateActionSeqDat')
     
     def applyForward(self, forwardInput):
         ensureType(forwardInput, TypedInst)
@@ -937,7 +943,7 @@ class SclStateActionSeqTransistionRuleFunction(object):
         # * now we return the answer
         returnedCodomainDat = StateActionSeqDat(stateActionSeq)
 
-        returnedtypedInst = TypedInst(Type('stateActionSeq'))
+        returnedtypedInst = TypedInst(Type('StateActionSeqDat'))
         returnedtypedInst.dat = returnedCodomainDat
 
         #  return a actual "TypedInst"
@@ -952,7 +958,7 @@ class SclStateActionSeqTransistionRuleFunction(object):
         # backward planning from "backwardOutput" to backward-input
 
         # codomain and backwardOutput must be exactly the same for backward planning!
-        if not checkStateActionSeqDatSame(backwardOutput.dat, self.stateActionSeqInCodomain.dat):
+        if not checkStateActionSeqDatSame(backwardOutput.dat, self.stateActionSeqInCodomain):
             return None # not the same - thus we can't do backward planning with this particular rule!
 
         backwardInput = TypedInst(self.inputType)
@@ -1004,8 +1010,8 @@ def learnPreconditionActionConsequence(condition, operation, consequence,  globa
 
     # create the rule
     createdRule = SclRule(
-        Type('stateActionSeq'), # input type
-        Type('stateActionSeq'), # output type
+        Type('StateActionSeqDat'), # input type
+        Type('StateActionSeqDat'), # output type
         createdRuleFunction
     )
 
@@ -1084,23 +1090,35 @@ if __name__ == "__main__":
     globalCtx.scheduler.systemStartAbsoluteTime = time.time()
 
     if entryName == 'manualTestLearnPrecondActionConsequenceA':
-        # learn action sequence to get to goal state
+        # * learn action sequence to get to goal state
         condition = 'a'
         action = 'act0'
         consequence = 'b'
         learnPreconditionActionConsequence(condition, action, consequence,    globalCtx)
 
-        # now we add a goal to test backward planning      StateActionSeqDat(['b']) 
-        # TODO  :  add goal with StateActionSeqDat(['b']) 
+        # * now we add a goal to test backward planning      StateActionSeqDat(['b']) 
+        goalA = TypedInst.makeWithDat(Type('StateActionSeqDat'), StateActionSeqDat(['b']))
+        
+        createdPendingTask = {}
+        createdPendingTask['activeFrom'] = -1.0 # set absolute time when the job will be added as active job
+        createdPendingTask['kind'] = 'goal' # job is to process a goal with backward-inference
+        createdPendingTask['val'] = goalA # actual job is to process the goal with backward inference
+        globalCtx.scheduler.pendingInactiveTasks.append(createdPendingTask)
 
-        # now we do backward inference
-        # TODO  :  
 
-        # now we do add occurrence of even which is condition     StateActionSeqDat(['a'])
-        # TODO  :
+        # * now we do backward inference
+        schedulerTick(globalCtx.scheduler, globalCtx)
 
-        # now we do forward inference
-        # TODO
+        # * now we do add occurrence of even which is condition     StateActionSeqDat(['a'])
+        eventA = SclEvent( TypedInst.makeWithDat(Type('StateActionSeqDat'), StateActionSeqDat(['a'])) )
+        createdPendingJob = {}
+        createdPendingJob['activeFrom'] = 0.0 # set absolute time when the job will be added as active job
+        createdPendingJob['kind'] = 'event' # job is to process a event with forward-inference
+        createdPendingJob['val'] = eventA # actual job is to process the event with forward inference
+        globalCtx.scheduler.putJob(createdPendingJob)
+
+        # * now we do forward inference
+        schedulerTick(globalCtx.scheduler, globalCtx)
 
         # TODO  :  also check if the forward inference gets processed correctly by adding debug code to it!!!
 
