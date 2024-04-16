@@ -965,7 +965,9 @@ class SclStateActionSeqTransistionRuleFunction(object):
 
         # new way to compare to figure out if we can do backward inference
         # codomain and backwardOutput must overlap for backward planning!
-        if backwardOutput.dat.seq[-1] != self.stateActionSeqInCodomain.seq[-1]:
+        #
+        # TODO LOW  :  implement overlap check from back of sequence ( index 0 )
+        if backwardOutput.dat.seq[0] != self.stateActionSeqInCodomain.seq[0]:
             return None # not the same - thus we can't do backward planning with this particular rule!
 
         backwardInput = TypedInst(self.inputType)
