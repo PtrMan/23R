@@ -935,6 +935,7 @@ class SclStateActionSeqTransistionRuleFunction(object):
 
         # now we execute the actual action
         action = stateActionSeq[1]
+        print(f'[act] DUMMY to enact action={action}')
         # TODO TODO TODO TODO  :  enact actual action
 
         # now we cut away the pre-condition and the action
@@ -957,8 +958,14 @@ class SclStateActionSeqTransistionRuleFunction(object):
 
         # backward planning from "backwardOutput" to backward-input
 
-        # codomain and backwardOutput must be exactly the same for backward planning!
-        if not checkStateActionSeqDatSame(backwardOutput.dat, self.stateActionSeqInCodomain):
+        # commented because OLD pre 15.4.2024 way to check if we can do backward inference
+        ### # codomain and backwardOutput must be exactly the same for backward planning!
+        ### if not checkStateActionSeqDatSame(backwardOutput.dat, self.stateActionSeqInCodomain):
+        ###    return None # not the same - thus we can't do backward planning with this particular rule!
+
+        # new way to compare to figure out if we can do backward inference
+        # codomain and backwardOutput must overlap for backward planning!
+        if backwardOutput.dat.seq[-1] != self.stateActionSeqInCodomain.seq[-1]:
             return None # not the same - thus we can't do backward planning with this particular rule!
 
         backwardInput = TypedInst(self.inputType)
