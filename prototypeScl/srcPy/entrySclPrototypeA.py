@@ -889,6 +889,15 @@ def checkStateActionSeqDatSame(a, b):
     
     return True
 
+# helper to do overlap check of sequence from back (index = 0)
+def checkOverlapOfSeqFromBack(a, b):
+    overlapRange = min(len(a), len(b))
+    for idx in range(overlapRange):
+        if a[idx] != b[idx]:
+            return False
+    return True
+
+
 
 # SclFunction for SclRule for state transition
 #
@@ -967,7 +976,7 @@ class SclStateActionSeqTransistionRuleFunction(object):
         # codomain and backwardOutput must overlap for backward planning!
         #
         # TODO LOW  :  implement overlap check from back of sequence ( index 0 )
-        if backwardOutput.dat.seq[0] != self.stateActionSeqInCodomain.seq[0]:
+        if not checkOverlapOfSeqFromBack(backwardOutput.dat.seq, self.stateActionSeqInCodomain.seq):
             return None # not the same - thus we can't do backward planning with this particular rule!
 
         backwardInput = TypedInst(self.inputType)
