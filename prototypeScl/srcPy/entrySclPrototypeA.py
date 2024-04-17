@@ -930,7 +930,15 @@ class SclStateActionSeqTransistionRuleFunction(object):
     def applyForward(self, forwardInput):
         ensureType(forwardInput, TypedInst)
 
-        print('[trace] SclStateActionSeqTransistionRuleFunction.applyForward() called')
+        print('[trace] SclStateActionSeqTransistionRuleFunction.applyForward() ENTER')
+
+        # extract the seq from the "forwardInput"
+        stateActionSeq = self.stateActionSeqInDomain.seq
+
+        traceVerbosity = 4
+        if traceVerbosity >= 4:
+            print(f'[trace] SclStateActionSeqTransistionRuleFunction.applyForward(): stateActionSeq={str(stateActionSeq)}')
+
 
         if not (forwardInput.type_.typeName == self.inputType.typeName):
             raise InterpretationSoftError(f'must be of type {self.inputType.typeName}')
@@ -948,8 +956,6 @@ class SclStateActionSeqTransistionRuleFunction(object):
             print('c')
             return None
         
-        # extract the seq from the "forwardInput"
-        stateActionSeq = self.stateActionSeqInDomain.seq
 
         # now we execute the actual action
         action = stateActionSeq[1]
@@ -1149,7 +1155,7 @@ if __name__ == "__main__":
         schedulerTick(globalCtx.scheduler, globalCtx)
 
         # * now we do add occurrence of even which is condition     StateActionSeqDat(['a'])
-        eventA = SclEvent( TypedInst.makeWithDat(Type('StateActionSeqDat'), StateActionSeqDat(['a'])) )
+        eventA = SclEvent( TypedInst.makeWithDat(Type('StateActionSeqDat'), StateActionSeqDat(['b'])) )
         createdPendingJob = {}
         createdPendingJob['activeFrom'] = 0.0 # set absolute time when the job will be added as active job
         createdPendingJob['kind'] = 'event' # job is to process a event with forward-inference
@@ -1393,16 +1399,6 @@ def rewardJob(jobDat, reward):
 
 ################## STAGING AREA (things to add soon)
 
-
-
-
-
-# TODO  :  test learnPreconditionActionConsequence()
-
-
-'''
-
-'''
 
 
 
