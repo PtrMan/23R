@@ -380,10 +380,9 @@ class SclEventDetector(object):
     def checkPatternMatch(self, e):
         if e.payload.type_.typeName != self.rule.inputType.typeName:
             return False # types are not the same, can't match
-        
-        # TODO LOW  :  here we are doing more pattern matching!
 
-        return True
+        # now we dispatch it to the rule, because only the rule knows how to compare events to the expected forward input
+        return self.rule.fn.checkForwardPatternMatch(e)
     
 
 
@@ -926,7 +925,25 @@ class SclStateActionSeqTransistionRuleFunction(object):
 
         self.inputType = Type('StateActionSeqDat')
         self.outputType = Type('StateActionSeqDat')
-    
+
+    # called to check if the pattern matches
+    # /param e is a "SclEvent"
+    def checkForwardPatternMatch(self, e):
+        pass
+
+        a = self.stateActionSeqInDomain
+        forwardInput = e.payload
+
+        if not isinstance(forwardInput.dat, StateActionSeqDat):
+            return False  # return because we expected this datatype
+
+        # now we need to check if the state in forward input is exactly the same!
+        if not checkStateActionSeqDatSame(forwardInput.dat, StateActionSeqDat([self.stateActionSeqInDomain.seq[0]])):
+            return False
+
+        return True
+
+
     def applyForward(self, forwardInput):
         ensureType(forwardInput, TypedInst)
 
