@@ -136,6 +136,12 @@ def schedulerTick(scheduler, globalCtx):
     if selTask is not None: # has a task been select for execution?
         if True: # codeblock
             if selTask['kind'] == 'goal':
+
+                # HACK  :  goaltoProcess can be None for some reason, so we need to guard against that
+                # TODO FIXME LOW  :  fix the origin of goal being None!
+                if selTask['val'] is None:
+                    return
+
                 typeName = selTask['val'].type_.typeName
             elif selTask['kind'] == 'event':
                 typeName = selTask['val'].payload.type_.typeName
@@ -143,8 +149,10 @@ def schedulerTick(scheduler, globalCtx):
         
         if selTask['kind'] == 'goal': # the job is to process a goal with backward-inference
 
-            goaltoProcess = selTask['val'] # the goal to get processed is the value which is hold by the job
 
+
+
+            goaltoProcess = selTask['val'] # the goal to get processed is the value which is hold by the job
 
 
 
@@ -218,7 +226,8 @@ def schedulerTick(scheduler, globalCtx):
                     inputTypedInst = eventToProcess.payload
 
                     conclusionTypedInstsThis = iEventDetector.rule.applyForward(inputTypedInst)
-                    conclusionTypedInsts += [conclusionTypedInstsThis]
+                    if conclusionTypedInstsThis is not None:
+                        conclusionTypedInsts += [conclusionTypedInstsThis]
 
             # now we need to add derived events as jobs to get processed
             for iConclusionTypedInst in conclusionTypedInsts:
@@ -1108,14 +1117,25 @@ if __name__ == "__main__":
     globalCtx.scheduler.systemStartAbsoluteTime = time.time()
 
     if entryName == 'manualTestLearnPrecondActionConsequenceA':
+
+        nSeqKnowledgeCount = 2 # for how many pieces of sequence depth do we test? . either 1 or 2
+
+
         # * learn action sequence to get to goal state
-        condition = 'a'
-        action = 'act0'
-        consequence = 'b'
+        condition = 'b'
+        action = 'act1'
+        consequence = 'c'
         learnPreconditionActionConsequence(condition, action, consequence,    globalCtx)
 
+        if nSeqKnowledgeCount >= 2:
+            condition = 'a'
+            action = 'act0'
+            consequence = 'b'
+            learnPreconditionActionConsequence(condition, action, consequence, globalCtx)
+
+
         # * now we add a goal to test backward planning      StateActionSeqDat(['b']) 
-        goalA = TypedInst.makeWithDat(Type('StateActionSeqDat'), StateActionSeqDat(['b']))
+        goalA = TypedInst.makeWithDat(Type('StateActionSeqDat'), StateActionSeqDat(['c']))
         
         createdPendingTask = {}
         createdPendingTask['activeFrom'] = -1.0 # set absolute time when the job will be added as active job
@@ -1125,6 +1145,7 @@ if __name__ == "__main__":
 
 
         # * now we do backward inference
+        schedulerTick(globalCtx.scheduler, globalCtx)
         schedulerTick(globalCtx.scheduler, globalCtx)
 
         # * now we do add occurrence of even which is condition     StateActionSeqDat(['a'])
@@ -1136,6 +1157,7 @@ if __name__ == "__main__":
         globalCtx.scheduler.putJob(createdPendingJob)
 
         # * now we do forward inference
+        schedulerTick(globalCtx.scheduler, globalCtx)
         schedulerTick(globalCtx.scheduler, globalCtx)
 
         # TODO  :  also check if the forward inference gets processed correctly by adding debug code to it!!!
