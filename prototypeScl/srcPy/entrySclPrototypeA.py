@@ -220,7 +220,7 @@ def schedulerTick(scheduler, globalCtx):
 
             # process the event
             for iEventDetector in globalCtx.eventDetectors.retAllItems():
-                if iEventDetector.checkPatternMatch(eventToProcess): # check if event matches to pattern of the actual detector
+                if not iEventDetector.wasUsed and iEventDetector.checkPatternMatch(eventToProcess): # check if event matches to pattern of the actual detector
                     
                     # ( we collect derived events from the forward process )
                     inputTypedInst = eventToProcess.payload
@@ -228,6 +228,11 @@ def schedulerTick(scheduler, globalCtx):
                     conclusionTypedInstsThis = iEventDetector.rule.applyForward(inputTypedInst)
                     if conclusionTypedInstsThis is not None:
                         conclusionTypedInsts += [conclusionTypedInstsThis]
+
+                    # label the detector as used
+                    iEventDetector.wasUsed = True
+                    # TODO LOW  :  purge used event detectors in regular intervals
+
 
             # now we need to add derived events as jobs to get processed
             for iConclusionTypedInst in conclusionTypedInsts:
@@ -374,6 +379,8 @@ class SclEventDetector(object):
     # /param rule rule which has to be applied when the pattern matching succeeded
     def __init__(self, rule):
         self.rule = rule
+
+        self.wasUsed = False # has the event detector been used once? this flag is used to check for events only once
 
     # called to check if the pattern matches
     # /param e is a "SclEvent"
@@ -915,7 +922,7 @@ def checkOverlapOfSeqFromBack(a, b):
 # [vz1, action1, vz0]                    SclTypename: stateActionSeq
 #   rule with function
 # [vz0]                                  SclTypename: stateActionSeq
-class SclStateActionSeqTransistionRuleFunction(object):
+class SclStateActionSeqTransitionRuleFunction(object):
     def __init__(self, stateActionSeqInDomain, stateActionSeqInCodomain):
         ensureType(stateActionSeqInDomain, StateActionSeqDat)
         ensureType(stateActionSeqInCodomain, StateActionSeqDat)
@@ -931,7 +938,6 @@ class SclStateActionSeqTransistionRuleFunction(object):
     def checkForwardPatternMatch(self, e):
         pass
 
-        a = self.stateActionSeqInDomain
         forwardInput = e.payload
 
         if not isinstance(forwardInput.dat, StateActionSeqDat):
@@ -947,14 +953,14 @@ class SclStateActionSeqTransistionRuleFunction(object):
     def applyForward(self, forwardInput):
         ensureType(forwardInput, TypedInst)
 
-        print('[trace] SclStateActionSeqTransistionRuleFunction.applyForward() ENTER')
+        print('[trace] SclStateActionSeqTransitionRuleFunction.applyForward() ENTER')
 
         # extract the seq from the "forwardInput"
         stateActionSeq = self.stateActionSeqInDomain.seq
 
         traceVerbosity = 4
         if traceVerbosity >= 4:
-            print(f'[trace] SclStateActionSeqTransistionRuleFunction.applyForward(): stateActionSeq={str(stateActionSeq)}')
+            print(f'[trace] SclStateActionSeqTransitionRuleFunction.applyForward(): stateActionSeq={str(stateActionSeq)}')
 
 
         if not (forwardInput.type_.typeName == self.inputType.typeName):
@@ -994,6 +1000,8 @@ class SclStateActionSeqTransistionRuleFunction(object):
     def applyBackward(self, backwardOutput):
         ensureType(backwardOutput, TypedInst)
 
+        print('[trace] SclStateActionSeqTransitionRuleFunction.applyBackward() ENTER')
+
         if not (backwardOutput.type_.typeName == self.outputType.typeName):
             raise InterpretationSoftError(f'must be of type {self.outputType.typeName}')
 
@@ -1022,7 +1030,7 @@ if False: # code for manual test of forward inference with this SclRule
     domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
     codomainDat = StateActionSeqDat(['v1'])
 
-    fn = SclStateActionSeqTransistionRuleFunction(domainDat, codomainDat)
+    fn = SclStateActionSeqTransitionRuleFunction(domainDat, codomainDat)
 
     # manually testing forward planning
 
@@ -1037,7 +1045,7 @@ if False: # code for manual test of backward inference with this SclRule
     domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
     codomainDat = StateActionSeqDat(['v1'])
 
-    fn = SclStateActionSeqTransistionRuleFunction(domainDat, codomainDat)
+    fn = SclStateActionSeqTransitionRuleFunction(domainDat, codomainDat)
 
     # manually testing forward planning
 
@@ -1056,7 +1064,7 @@ def learnPreconditionActionConsequence(condition, operation, consequence,  globa
 
     stateActionSeqInDomain = StateActionSeqDat([condition, operation, consequence]) # build the domain which is state-action-state sequence
     stateActionSeqInCodomain = StateActionSeqDat([consequence]) # build the codomain which is only the consequence
-    createdRuleFunction = SclStateActionSeqTransistionRuleFunction(stateActionSeqInDomain, stateActionSeqInCodomain) # create the transition rule
+    createdRuleFunction = SclStateActionSeqTransitionRuleFunction(stateActionSeqInDomain, stateActionSeqInCodomain) # create the transition rule
 
     # create the rule
     createdRule = SclRule(
@@ -1154,7 +1162,7 @@ if __name__ == "__main__":
             condition = 'a'
             action = 'act0'
             consequence = 'b'
-            learnPreconditionActionConsequence(condition, action, consequence, globalCtx)
+            learnPreconditionActionConsequence(condition, action, consequence,   globalCtx)
 
 
         # * now we add a goal to test backward planning      StateActionSeqDat(['b']) 
