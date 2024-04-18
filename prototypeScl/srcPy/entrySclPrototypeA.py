@@ -182,7 +182,16 @@ def schedulerTick(scheduler, globalCtx):
                 createdEventDetector = SclEventDetector(iRule)
 
                 key = None # TODO LOW  :  what should be the key here? probably the typename is the best option here
-                globalCtx.eventDetectors.put(None, createdEventDetector)
+
+                # special treatment to install "Event Detector" only once
+                eventDetectorAlreadyExists = False
+                for iEventDetectorItem in globalCtx.eventDetectors.retAllItems():
+                    if iEventDetectorItem.calcHashOfForwardCheckDat() == createdEventDetector.calcHashOfForwardCheckDat():
+                        eventDetectorAlreadyExists = True
+                        break # optimization
+                if not eventDetectorAlreadyExists:
+
+                    globalCtx.eventDetectors.put(None, createdEventDetector)
 
 
             '''
@@ -391,7 +400,8 @@ class SclEventDetector(object):
         # now we dispatch it to the rule, because only the rule knows how to compare events to the expected forward input
         return self.rule.fn.checkForwardPatternMatch(e)
     
-
+    def calcHashOfForwardCheckDat(self):
+        return self.rule.fn.calcHashOfForwardCheckDat()
 
 
 '''
@@ -1022,6 +1032,11 @@ class SclStateActionSeqTransitionRuleFunction(object):
         backwardInput = TypedInst(self.inputType)
         backwardInput.dat = self.stateActionSeqInDomain
         return backwardInput
+
+    ###commented because not used
+    # compute a hash of the whole forward condition
+    def calcHashOfForwardCheckDat(self):
+        return hash('StateActionSeqDat') ^ hash(self.stateActionSeqInDomain.seq[0])
 
 
 
