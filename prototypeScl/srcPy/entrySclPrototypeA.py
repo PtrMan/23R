@@ -11,7 +11,9 @@ def ensureType(v, type_):
     if not isinstance(v, type_):
         raise Exception('FATAL: expected type didnt match')
 
-
+def ensureTypeSubclass(v, type_):
+    if not issubclass(type(v), type_):
+        raise Exception('FATAL: expected subclass type didnt match')
 
 
 
@@ -891,8 +893,25 @@ class AppRunFetchTextRuleFunction(object):
 
 
 
+# abstact class of a operator which can be called by the SCL core
+class SclActionOperator(object):
+    def __init__(self):
+        pass
+    
+    # /param consequenceDat of type "StateActionSeqDat". Is the consequence which is expected to happen after calling the op
+    def invoke(self, consequenceDat):
+        raise Unimplemented('')
 
+class SclActionDummyOperator(SclActionOperator):
+    def __init__(self):
+        # TODO LOW  :  call into super-ctor
 
+        pass
+    
+    def invoke(self, consequenceDat):
+        print('[info] dummy operator ENTER')
+        print('[info] dummy operator EXIT')
+        
 
 # data for SclType:stateActionSeq
 class StateActionSeqDat(object):
@@ -933,12 +952,14 @@ def checkOverlapOfSeqFromBack(a, b):
 #   rule with function
 # [vz0]                                  SclTypename: stateActionSeq
 class SclStateActionSeqTransitionRuleFunction(object):
-    def __init__(self, stateActionSeqInDomain, stateActionSeqInCodomain):
+    def __init__(self, stateActionSeqInDomain, stateActionSeqInCodomain, actionOperator):
         ensureType(stateActionSeqInDomain, StateActionSeqDat)
         ensureType(stateActionSeqInCodomain, StateActionSeqDat)
+        ensureTypeSubclass(actionOperator, SclActionOperator)
 
         self.stateActionSeqInDomain = stateActionSeqInDomain
         self.stateActionSeqInCodomain = stateActionSeqInCodomain
+        self.actionOperator = actionOperator
 
         self.inputType = Type('StateActionSeqDat')
         self.outputType = Type('StateActionSeqDat')
@@ -992,8 +1013,10 @@ class SclStateActionSeqTransitionRuleFunction(object):
 
         # now we execute the actual action
         action = stateActionSeq[1]
-        print(f'[act] DUMMY to enact action={action}')
-        # TODO TODO TODO TODO  :  enact actual action
+        print(f'[act] enact action={action} ...')
+        
+        self.actionOperator.invoke(self.stateActionSeqInCodomain)
+        print('[act] ... done')
 
         # now we cut away the pre-condition and the action
         stateActionSeq = stateActionSeq[2:]
@@ -1077,9 +1100,14 @@ def learnPreconditionActionConsequence(condition, operation, consequence,  globa
     #operation = 'op0'
     #consequence = 'b'
 
+    ensureType(operation, str) # must be a string
+
+    # TODO LOW  :  lookup the "actionOperator" by name of the operation stored in "operation"
+    actionOperator = SclActionDummyOperator()
+
     stateActionSeqInDomain = StateActionSeqDat([condition, operation, consequence]) # build the domain which is state-action-state sequence
     stateActionSeqInCodomain = StateActionSeqDat([consequence]) # build the codomain which is only the consequence
-    createdRuleFunction = SclStateActionSeqTransitionRuleFunction(stateActionSeqInDomain, stateActionSeqInCodomain) # create the transition rule
+    createdRuleFunction = SclStateActionSeqTransitionRuleFunction(stateActionSeqInDomain, stateActionSeqInCodomain, actionOperator) # create the transition rule
 
     # create the rule
     createdRule = SclRule(
