@@ -1481,5 +1481,99 @@ def rewardJob(jobDat, reward):
 ################## STAGING AREA (things to add soon)
 
 
+#SclTypename: stateActionSeq
+
+# rule which is used to call a action to check if a certain target state has been reached
+class SclStateTerminalCheckerRuleFunction(object):
+    def __init__(self, stateActionSeqInDomain, globalCtx):
+        ensureType(stateActionSeqInDomain, StateActionSeqDat)
+        ensureType(globalCtx, GlobalCtx)
+
+        self.stateActionSeqInDomain = stateActionSeqInDomain
+        # self.actionOperator = actionOperator
+        self.globalCtx = globalCtx
+
+        self.inputType = Type('StateActionSeqDat')
+        self.outputType = Type('ConseqZ') # consequence
+
+    # called to check if the pattern matches
+    # /param e is a "SclEvent"
+    def checkForwardPatternMatch(self, e):
+        pass
+
+        forwardInput = e.payload
+
+        if not isinstance(forwardInput.dat, StateActionSeqDat):
+            return False  # return because we expected this datatype
+
+        # now we need to check if the state in forward input is exactly the same!
+        if not checkStateActionSeqDatSame(forwardInput.dat, StateActionSeqDat([self.stateActionSeqInDomain.seq[0]])):
+            return False
+
+        return True
+
+    def applyForward(self, forwardInput):
+        ensureType(forwardInput, TypedInst)
+
+        print('[trace] SclStateTerminalCheckerRuleFunction.applyForward() ENTER')
+
+        # extract the seq from the "forwardInput"
+        stateActionSeq = self.stateActionSeqInDomain.seq
+
+        traceVerbosity = 4
+        if traceVerbosity >= 4:
+            print(
+                f'[trace] SclStateTerminalCheckerRuleFunction.applyForward(): stateActionSeq={str(stateActionSeq)}')
+
+        if not (forwardInput.type_.typeName == self.inputType.typeName):
+            raise InterpretationSoftError(f'must be of type {self.inputType.typeName}')
+
+        if not isinstance(forwardInput.dat, StateActionSeqDat):
+            print('a')
+            return None  # return because we expected this datatype
+
+        if len(self.stateActionSeqInDomain.seq) <= 1:
+            print('b')
+            return None  # we can't do forward planning if we don't have a pre-condition+action+effect
+
+        # now we need to check if the state in forward input is exactly the same!
+        if not checkStateActionSeqDatSame(forwardInput.dat, StateActionSeqDat([self.stateActionSeqInDomain.seq[0]])):
+            print('c')
+            return None
+
+        # now we execute the actual callback action
+        actionName = 'TODO'
+        print(f'[act] invoke callback={actionName} ...')
+        actionOperator = self.globalCtx.actionRegistry.lookupByName(actionName)
+        actionOperator.invoke(None)
+        print('[act] ... done')
+
+        # * now we return the answer
+        returnedtypedInst = TypedInst(Type('ConseqZ'))
+
+        #  return a actual "TypedInst"
+        return returnedtypedInst
+
+    def applyBackward(self, backwardOutput):
+        ensureType(backwardOutput, TypedInst)
+
+        print('[trace] SclStateActionSeqTransitionRuleFunction.applyBackward() ENTER')
+
+        if not (backwardOutput.type_.typeName == self.outputType.typeName):
+            raise InterpretationSoftError(f'must be of type {self.outputType.typeName}')
+
+        # backward planning from "backwardOutput" to backward-input
+
+        backwardInput = TypedInst(self.inputType)
+        backwardInput.dat = self.stateActionSeqInDomain
+        return backwardInput
+
+    ###commented because not used
+    # compute a hash of the whole forward condition
+    def calcHashOfForwardCheckDat(self):
+        return hash('StateActionSeqDat') ^ hash(self.stateActionSeqInDomain.seq[0])
+
+
+
 
 
