@@ -546,7 +546,16 @@ def sclRulesGc(ruleManager):
 
 
 
+class SclActionRegistry(object):
+    def __init__(self):
+        self.actionsByName = [] # tuples
 
+    def lookupByName(self, name):
+        ensureType(name, str)
+        for iActionName, iAction in self.actionsByName:
+            if iActionName == name:
+                return iAction
+        return None
 
 
 class GlobalCtx(object):
@@ -554,6 +563,7 @@ class GlobalCtx(object):
         self.scheduler = SclScheduler()
         self.ruleManager = SclRuleManager()
         #self.eventManager = SclEventManager()
+        self.actionRegistry = SclActionRegistry()
 
 
         # set of 'SclEventDetector's for which the system is looking for.
@@ -952,14 +962,15 @@ def checkOverlapOfSeqFromBack(a, b):
 #   rule with function
 # [vz0]                                  SclTypename: stateActionSeq
 class SclStateActionSeqTransitionRuleFunction(object):
-    def __init__(self, stateActionSeqInDomain, stateActionSeqInCodomain, actionOperator):
+    def __init__(self, stateActionSeqInDomain, stateActionSeqInCodomain, globalCtx):
         ensureType(stateActionSeqInDomain, StateActionSeqDat)
         ensureType(stateActionSeqInCodomain, StateActionSeqDat)
-        ensureTypeSubclass(actionOperator, SclActionOperator)
+        ensureType(globalCtx, GlobalCtx)
 
         self.stateActionSeqInDomain = stateActionSeqInDomain
         self.stateActionSeqInCodomain = stateActionSeqInCodomain
-        self.actionOperator = actionOperator
+        #self.actionOperator = actionOperator
+        self.globalCtx = globalCtx
 
         self.inputType = Type('StateActionSeqDat')
         self.outputType = Type('StateActionSeqDat')
@@ -1012,10 +1023,10 @@ class SclStateActionSeqTransitionRuleFunction(object):
         
 
         # now we execute the actual action
-        action = stateActionSeq[1]
-        print(f'[act] enact action={action} ...')
-        
-        self.actionOperator.invoke(self.stateActionSeqInCodomain)
+        actionName = stateActionSeq[1]
+        print(f'[act] enact action={actionName} ...')
+        actionOperator = self.globalCtx.actionRegistry.lookupByName(actionName)
+        actionOperator.invoke(self.stateActionSeqInCodomain)
         print('[act] ... done')
 
         # now we cut away the pre-condition and the action
@@ -1107,7 +1118,7 @@ def learnPreconditionActionConsequence(condition, operation, consequence,  globa
 
     stateActionSeqInDomain = StateActionSeqDat([condition, operation, consequence]) # build the domain which is state-action-state sequence
     stateActionSeqInCodomain = StateActionSeqDat([consequence]) # build the codomain which is only the consequence
-    createdRuleFunction = SclStateActionSeqTransitionRuleFunction(stateActionSeqInDomain, stateActionSeqInCodomain, actionOperator) # create the transition rule
+    createdRuleFunction = SclStateActionSeqTransitionRuleFunction(stateActionSeqInDomain, stateActionSeqInCodomain, globalCtx) # create the transition rule
 
     # create the rule
     createdRule = SclRule(
@@ -1158,7 +1169,9 @@ if __name__ == "__main__":
     # create global context
     globalCtx = GlobalCtx()
 
-
+    # register actions
+    globalCtx.actionRegistry.actionsByName.append( ('act0', SclActionDummyOperator()) )
+    globalCtx.actionRegistry.actionsByName.append( ('act1', SclActionDummyOperator()) )
 
 
 
