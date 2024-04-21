@@ -251,7 +251,7 @@ def schedulerTick(scheduler, globalCtx):
                 createdPendingTask = {}
                 createdPendingTask['activeFrom'] = 0.0 # set absolute time when the job will be added as active job
                 createdPendingTask['kind'] = 'event' # job is to process a event with forward-inference
-                createdPendingTask['val'] = SclEvent(iConclusionTypedInst) # actual job is to process the event with forward inference
+                createdPendingTask['val'] = SclEvent(iConclusionTypedInst, globalCtx.retUniqueEventId()) # actual job is to process the event with forward inference
                 globalCtx.scheduler.pendingInactiveTasks.append(createdPendingTask)
 
             pass
@@ -377,9 +377,11 @@ class SclRule(object):
 ## AERA-like
 
 class SclEvent(object):
-    def __init__(self, payload):
+    def __init__(self, payload, uniqueId):
         ensureType(payload, TypedInst) # payload must be of this type!!!
+        ensureType(uniqueId, int) # must be int
         self.payload = payload
+        self.uniqueId = uniqueId
 
 
 ##
@@ -576,6 +578,13 @@ class GlobalCtx(object):
 
         self.tickCnt = 0 # tick counter
 
+        self.uniqueIdForEventsTracker = 0 # tracker for unique id's for SclEvent's
+
+    # return unique id for a event
+    def retUniqueEventId(self):
+        res = self.uniqueIdForEventsTracker
+        self.uniqueIdForEventsTracker+=1
+        return res
 
 '''
 # /param e "SclEvent" to check
@@ -1345,7 +1354,7 @@ if __name__ == "__main__":
         schedulerTick(globalCtx.scheduler, globalCtx)
 
         # * now we do add occurrence of even which is condition     StateActionSeqDat(['a'])
-        eventA = SclEvent( TypedInst.makeWithDat(Type('StateActionSeqDat'), StateActionSeqDat(['b'])) )
+        eventA = SclEvent( TypedInst.makeWithDat(Type('StateActionSeqDat'), StateActionSeqDat(['b'])) , globalCtx.retUniqueEventId())
         createdPendingJob = {}
         createdPendingJob['activeFrom'] = 0.0 # set absolute time when the job will be added as active job
         createdPendingJob['kind'] = 'event' # job is to process a event with forward-inference
@@ -1415,7 +1424,7 @@ if __name__ == "__main__":
 
 
         # now we add a event for testing if forward inference for an event works fine
-        eventA = SclEvent(TypedInst(Type('clockTickA')))
+        eventA = SclEvent(TypedInst(Type('clockTickA')), globalCtx.retUniqueEventId())
         createdPendingJob = {}
         createdPendingJob['activeFrom'] = 0.0 # set absolute time when the job will be added as active job
         createdPendingJob['kind'] = 'event' # job is to process a event with forward-inference
@@ -1424,7 +1433,7 @@ if __name__ == "__main__":
 
 
         # put for testing event SclEvent:a0 into the system to test generation of unreliable result as event SclEvent:failableA
-        eventA = SclEvent(TypedInst(Type('a0')))
+        eventA = SclEvent(TypedInst(Type('a0')), globalCtx.retUniqueEventId())
         createdPendingJob = {}
         createdPendingJob['activeFrom'] = 0.0 # set absolute time when the job will be added as active job
         createdPendingJob['kind'] = 'event' # job is to process a event with forward-inference
@@ -1485,7 +1494,7 @@ if __name__ == "__main__":
         # put for running the LM the event SclEvent:a1 into the system
         typedInst = TypedInst(Type('a2'))
         typedInst.dat = {'answerBeginningHumanTxt':'Bifidobacterium bifidum is'} # data to pass around with the "TypedInst"
-        eventA = SclEvent(typedInst)
+        eventA = SclEvent(typedInst, globalCtx.retUniqueEventId())
         createdPendingJob = {}
         createdPendingJob['activeFrom'] = 0.0 # set absolute time when the job will be added as active job
         createdPendingJob['kind'] = 'event' # job is to process a event with forward-inference
