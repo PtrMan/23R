@@ -553,12 +553,15 @@ class SclRecorder(object):
     def __init__(self):
         # this is
         self.trace = []
+        self.capacity = 50
 
     # put a tuple into the trace
     def putTrace(self, premiseEvent, appliedRule, consequenceEvent):
         self.trace.append( (premiseEvent, appliedRule, consequenceEvent) )
 
-        # TODO LOW  :  keep memory under bounds!!!
+        # keep memory under bounds
+        if len(self.trace) > self.capacity:
+            self.trace = self.trace[:-self.capacity]
 
 
 
