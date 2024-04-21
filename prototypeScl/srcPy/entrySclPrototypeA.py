@@ -227,7 +227,7 @@ def schedulerTick(scheduler, globalCtx):
             # (commented because not used yet)
             #globalCtx.eventManager.processEvent(eventToProcess)
 
-            conclusionTypedInsts = []
+            #conclusionTypedInsts = []
 
             # process the event
             for iEventDetector in globalCtx.eventDetectors.retAllItems():
@@ -236,25 +236,27 @@ def schedulerTick(scheduler, globalCtx):
                     # ( we collect derived events from the forward process )
                     inputTypedInst = eventToProcess.payload
 
+                    reactionEvent = None
+
                     conclusionTypedInstsThis = iEventDetector.rule.applyForward(inputTypedInst)
                     if conclusionTypedInstsThis is not None:
-                        conclusionTypedInsts += [conclusionTypedInstsThis]
+                        #conclusionTypedInsts += [conclusionTypedInstsThis]
+
+                        createdPendingTask = {}
+                        createdPendingTask['activeFrom'] = 0.0  # set absolute time when the job will be added as active job
+                        createdPendingTask['kind'] = 'event'  # job is to process a event with forward-inference
+                        reactionEvent = SclEvent(conclusionTypedInstsThis, globalCtx.retUniqueEventId())
+                        createdPendingTask['val'] = reactionEvent  # actual job is to process the event with forward inference
+                        globalCtx.scheduler.pendingInactiveTasks.append(createdPendingTask)
 
                     # label the detector as used
                     iEventDetector.wasUsed = True
                     # TODO LOW  :  purge used event detectors in regular intervals
 
+                    # log the applied rules
+                    globalCtx.recorder.putTrace(eventToProcess, iEventDetector.rule, reactionEvent)
 
-            # now we need to add derived events as jobs to get processed
-            for iConclusionTypedInst in conclusionTypedInsts:
-                
-                createdPendingTask = {}
-                createdPendingTask['activeFrom'] = 0.0 # set absolute time when the job will be added as active job
-                createdPendingTask['kind'] = 'event' # job is to process a event with forward-inference
-                createdPendingTask['val'] = SclEvent(iConclusionTypedInst, globalCtx.retUniqueEventId()) # actual job is to process the event with forward inference
-                globalCtx.scheduler.pendingInactiveTasks.append(createdPendingTask)
 
-            pass
             
         else:
             raise InternalTerminatingException('invalid job-kind encountered! this is fatal because it is a internal inconsistency of the program')
@@ -546,6 +548,19 @@ def sclRulesGc(ruleManager):
 
 
 
+# recorder which is used to record happended (SclEvent, SclRule, SclEvent) in forward derivation mode
+class SclRecorder(object):
+    def __init__(self):
+        # this is
+        self.trace = []
+
+    # put a tuple into the trace
+    def putTrace(self, premiseEvent, appliedRule, consequenceEvent):
+        self.trace.append( (premiseEvent, appliedRule, consequenceEvent) )
+
+        # TODO LOW  :  keep memory under bounds!!!
+
+
 
 
 class SclActionRegistry(object):
@@ -566,6 +581,8 @@ class GlobalCtx(object):
         self.ruleManager = SclRuleManager()
         #self.eventManager = SclEventManager()
         self.actionRegistry = SclActionRegistry()
+
+        self.recorder = SclRecorder()
 
 
         # set of 'SclEventDetector's for which the system is looking for.
@@ -1556,7 +1573,8 @@ if __name__ == "__main__":
 # TODO
 # * implement checking if the goal state has been reached (return is true/false)
 # * implement rewarding/punishment with use of TV of the chain which lead to the result (for that we have to trace all forward applied rules)
-
+#    * DONE  track id of SclEvent
+#    * TODO  add SclTracker to track events which ahppened and applied forward inferences which happened, so that we are able to reward/punish the chain which did lead to a given event
 
 
 
@@ -1605,7 +1623,6 @@ def rewardJob(jobDat, reward):
 
 
 ################## STAGING AREA (things to add soon)
-
 
 
 
