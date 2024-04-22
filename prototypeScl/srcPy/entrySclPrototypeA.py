@@ -109,6 +109,10 @@ class SclScheduler(object):
 #
 # is implementing the basic scheduling
 def schedulerTick(scheduler, globalCtx):
+    traceLevel = 4
+    if traceLevel >= 4:
+        print(f'[trace] schedulerTick() ENTER')
+
     scheduler.cachedSystemClockTime = time.time() - scheduler.systemStartAbsoluteTime
 
 
@@ -938,7 +942,7 @@ class SclActionOperator(object):
         pass
     
     # /param consequenceDat of type "StateActionSeqDat". Is the consequence which is expected to happen after calling the op
-    def invoke(self, consequenceDat):
+    def invoke(self, consequenceDat, globalCtx):
         raise Unimplemented('')
 
 class SclActionDummyOperator(SclActionOperator):
@@ -947,8 +951,17 @@ class SclActionDummyOperator(SclActionOperator):
 
         pass
     
-    def invoke(self, consequenceDat):
+    def invoke(self, consequenceDat, globalCtx):
         print('[info] dummy operator ENTER')
+
+        # inject expected event after completing the operation
+        eventA = SclEvent(TypedInst.makeWithDat(Type('StateActionSeqDat'), consequenceDat), globalCtx.retUniqueEventId())
+        createdPendingJob = {}
+        createdPendingJob['activeFrom'] = 0.0  # set absolute time when the job will be added as active job
+        createdPendingJob['kind'] = 'event'  # job is to process a event with forward-inference
+        createdPendingJob['val'] = eventA  # actual job is to process the event with forward inference
+        globalCtx.scheduler.putJob(createdPendingJob)
+
         print('[info] dummy operator EXIT')
         
 
@@ -1055,7 +1068,7 @@ class SclStateActionSeqTransitionRuleFunction(object):
         actionName = stateActionSeq[1]
         print(f'[act] enact action={actionName} ...')
         actionOperator = self.globalCtx.actionRegistry.lookupByName(actionName)
-        actionOperator.invoke(self.stateActionSeqInCodomain)
+        actionOperator.invoke(self.stateActionSeqInCodomain, self.globalCtx)
         print('[act] ... done')
 
         # now we cut away the pre-condition and the action
@@ -1217,9 +1230,9 @@ class SclStateTerminalCheckerRuleFunction(object):
             print('a')
             return None  # return because we expected this datatype
 
-        if len(self.stateActionSeqInDomain.seq) <= 1:
-            print('b')
-            return None  # we can't do forward planning if we don't have a pre-condition+action+effect
+        #if len(self.stateActionSeqInDomain.seq) <= 1:
+        #    print('b')
+        #    return None  # we can't do forward planning if we don't have a pre-condition+action+effect
 
         # now we need to check if the state in forward input is exactly the same!
         if not checkStateActionSeqDatSame(forwardInput.dat, StateActionSeqDat([self.stateActionSeqInDomain.seq[0]])):
@@ -1230,7 +1243,7 @@ class SclStateTerminalCheckerRuleFunction(object):
         actionName = 'TODO'
         print(f'[act] invoke callback={actionName} ...')
         actionOperator = self.globalCtx.actionRegistry.lookupByName(actionName)
-        actionOperator.invoke(None)
+        actionOperator.invoke(None, self.globalCtx)
         print('[act] ... done')
 
         # * now we return the answer
@@ -1382,8 +1395,8 @@ if __name__ == "__main__":
         globalCtx.scheduler.putJob(createdPendingJob)
 
         # * now we do forward inference
-        schedulerTick(globalCtx.scheduler, globalCtx)
-        schedulerTick(globalCtx.scheduler, globalCtx)
+        for z0 in range(8):
+            schedulerTick(globalCtx.scheduler, globalCtx)
 
         # TODO  :  also check if the forward inference gets processed correctly by adding debug code to it!!!
 
@@ -1577,7 +1590,36 @@ if __name__ == "__main__":
 # * implement checking if the goal state has been reached (return is true/false)
 # * implement rewarding/punishment with use of TV of the chain which lead to the result (for that we have to trace all forward applied rules)
 #    * DONE  track id of SclEvent
-#    * TODO  add SclTracker to track events which ahppened and applied forward inferences which happened, so that we are able to reward/punish the chain which did lead to a given event
+#    * DONE  add SclTracker to track events which ahppened and applied forward inferences which happened, so that we are able to reward/punish the chain which did lead to a given event
+#    * TODO  add function to pull out a chain which did lead to a event outcome
+
+
+
+
+class SclTraceTreeItem(object):
+    def __init__(self, appliedRule, consequenceEvent):
+        self.appliedRule = appliedRule
+        self.consequenceEvent = consequenceEvent
+
+        self.children = []  # SclTraceTreeItem
+
+
+
+# function to pull out the chains which did lead to a event outcome
+#
+# is used to reward/punish rules so the AI can learn on how to fulfill a given goal
+def calcChainsLeadingToEvent(destTraceTreeItem, event,   globalCtx):
+    for iTraceItem in globalCtx.recorder.trace:
+        premiseEvent, appliedRule, consequenceEvent = iTraceItem
+
+        if consequenceEvent.uniqueId == event.uniqueId: # did we find a connection of the chain?
+
+            # ... then we add it to the datastructure
+            traceTreeItem = SclTraceTreeItem(appliedRule, consequenceEvent)
+            destTraceTreeItem.children.append(traceTreeItem)
+
+            # ... and call recursivly to complete the chain further
+            calcChainsLeadingToEvent(traceTreeItem, premiseEvent,   globalCtx)
 
 
 
