@@ -29,9 +29,9 @@ def ensureTypeSubclass(v, type_):
 
 
 class SclTv(object):
-    def __init__(self, freq, evi):
+    def __init__(self, eviPos, evi):
         self.TRUTH_EVIDENTAL_HORIZON = 1.0
-        self.freq = freq
+        self.eviPos = eviPos
         self.evi = evi
 
 def convConfToEvi(conf, TRUTH_EVIDENTAL_HORIZON):
@@ -40,16 +40,22 @@ def convConfToEvi(conf, TRUTH_EVIDENTAL_HORIZON):
 def retConf(tv):
     return tv.evi / (tv.evi + tv.TRUTH_EVIDENTAL_HORIZON)
 
+def retFreq(tv):
+    return tv.eviPos / tv.evi
+
+def addEvidence(ratioPos, eviAmount, tv):
+    tv.eviPos += (ratioPos*eviAmount)
+    tv.evi += eviAmount
+
+
 def tvDedDeclarative(a, b, confFactor = 1.0):
     ensureType(a, SclTv)
     ensureType(b, SclTv)
 
-    f = a.freq * b.freq
+    f = retFreq(a) * retFreq(b)
     conclConf = retConf(a) * retConf(b) * f * confFactor
     conclEvi = convConfToEvi(conclConf)
-    return SclTv(f, conclEvi)
-
-
+    return SclTv(f*conclEvi, conclEvi)
 
 
 
