@@ -24,6 +24,37 @@ def ensureTypeSubclass(v, type_):
 #########################
 
 
+
+
+
+
+class SclTv(object):
+    def __init__(self, freq, evi):
+        self.TRUTH_EVIDENTAL_HORIZON = 1.0
+        self.freq = freq
+        self.evi = evi
+
+def convConfToEvi(conf, TRUTH_EVIDENTAL_HORIZON):
+    return TRUTH_EVIDENTAL_HORIZON * conf / (1.0 - conf)
+
+def retConf(tv):
+    return tv.evi / (tv.evi + tv.TRUTH_EVIDENTAL_HORIZON)
+
+def tvDedDeclarative(a, b, confFactor = 1.0):
+    ensureType(a, SclTv)
+    ensureType(b, SclTv)
+
+    f = a.freq * b.freq
+    conclConf = retConf(a) * retConf(b) * f * confFactor
+    conclEvi = convConfToEvi(conclConf)
+    return SclTv(f, conclEvi)
+
+
+
+
+
+#########################
+
 #
 class ResourceBoundedTableEntry(object):
     def __init__(self):
@@ -349,6 +380,9 @@ class SclRule(object):
         self.outputType = outputType
         self.fn = fn
         self.isStatic = False # is the rule removable by GC ?
+        
+        # TV of this rule - hold how good the rule was to fullfill the goals of the system
+        #self.tv = SclTv(1.0, 1.5)
 
         self.usage = SclUsageA()
 
@@ -1672,3 +1706,7 @@ def rewardJob(jobDat, reward):
 
 
 
+
+
+
+# TODO< use deduction in reasoning! >
