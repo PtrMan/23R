@@ -279,7 +279,8 @@ def schedulerTick(scheduler, globalCtx):
 
                     reactionEvent = None
 
-                    conclusionTypedInstsThis = iEventDetector.rule.applyForward(inputTypedInst)
+                    ###conclusionTypedInstsThis = iEventDetector.rule.applyForward(inputTypedInst)
+                    conclusionTypedInstsThis = iEventDetector.rule.applyForward2(eventToProcess)
                     if conclusionTypedInstsThis is not None:
                         #conclusionTypedInsts += [conclusionTypedInstsThis]
 
@@ -388,14 +389,14 @@ class SclRule(object):
         self.isStatic = False # is the rule removable by GC ?
         
         # TV of this rule - hold how good the rule was to fullfill the goals of the system
-        #self.tv = SclTv(1.0, 1.5)
+        self.tv = SclTv(1.0, 1.5)
 
         self.usage = SclUsageA()
 
-    def applyForward(self, forwardInput):
-        ensureType(forwardInput, TypedInst)
+    def applyForward2(self, forwardInput):
+        ensureType(forwardInput, SclEvent)
         
-        return self.fn.applyForward(forwardInput)
+        return self.fn.applyForward2(forwardInput)
     
     def applyBackward(self, backwardOutput):
         ensureType(backwardOutput, TypedInst)
@@ -405,6 +406,12 @@ class SclRule(object):
     def __eq__(a, b):
         return a.inputType == b.inputType and a.outputType == b.outputType and a.fn == b.fn and a.isStatic == b.isStatic
 
+'''
+    def applyForward(self, forwardInput):
+        ensureType(forwardInput, TypedInst)
+        
+        return self.fn.applyForward(forwardInput)
+'''
 
 
 
@@ -512,20 +519,7 @@ class SclRuleManager(object):
     def __init__(self):
         # set of all rules in the system
         self.ruleSet = []
-    
-    # method to apply possible rules to a given datum
-    def applyForwardAll(self, input_):
-        ensureType(input_, TypedInst)
 
-        applicableRules = self.retForwardRulesOfType(input_.type_.typeName) # filter for applicable rules which have the given input type
-        
-        res = []
-        for iRule in applicableRules:
-            thisRes = iRule.applyForward(input_)
-            res.append(thisRes)
-        
-        return res
-    
     # method to apply possible rules to a given datum
     def applyBackwardAll(self, output_):
         ensureType(output_, TypedInst)
@@ -559,6 +553,21 @@ class SclRuleManager(object):
                 res.append(iRule)
         return res
     
+''' commented because not used
+    # method to apply possible rules to a given datum
+    def applyForwardAll(self, input_):
+        ensureType(input_, TypedInst)
+
+        applicableRules = self.retForwardRulesOfType(input_.type_.typeName) # filter for applicable rules which have the given input type
+        
+        res = []
+        for iRule in applicableRules:
+            thisRes = iRule.applyForward(input_)
+            res.append(thisRes)
+        
+        return res
+'''
+
 
 # does GC of the rules
 def sclRulesGc(ruleManager):
@@ -680,6 +689,32 @@ def sclTick(globalCtx):
 
 
 
+
+
+class SclTraceTreeItem(object):
+    def __init__(self, appliedRule, consequenceEvent):
+        self.appliedRule = appliedRule
+        self.consequenceEvent = consequenceEvent
+
+        self.children = []  # SclTraceTreeItem
+
+
+
+# function to pull out the chains which did lead to a event outcome
+#
+# is used to reward/punish rules so the AI can learn on how to fulfill a given goal
+def calcChainsLeadingToEvent(destTraceTreeItem, event,   globalCtx):
+    for iTraceItem in globalCtx.recorder.trace:
+        premiseEvent, appliedRule, consequenceEvent = iTraceItem
+
+        if consequenceEvent.uniqueId == event.uniqueId: # did we find a connection of the chain?
+
+            # ... then we add it to the datastructure
+            traceTreeItem = SclTraceTreeItem(appliedRule, consequenceEvent)
+            destTraceTreeItem.children.append(traceTreeItem)
+
+            # ... and call recursivly to complete the chain further
+            calcChainsLeadingToEvent(traceTreeItem, premiseEvent,   globalCtx)
 
 
 
@@ -1074,7 +1109,11 @@ class SclStateActionSeqTransitionRuleFunction(object):
         return True
 
 
-    def applyForward(self, forwardInput):
+    def applyForward2(self, forwardInput):
+        ensureType(forwardInput, SclEvent)
+
+        forwardInput = forwardInput.payload
+
         ensureType(forwardInput, TypedInst)
 
         print('[trace] SclStateActionSeqTransitionRuleFunction.applyForward() ENTER')
@@ -1247,10 +1286,17 @@ class SclStateTerminalCheckerRuleFunction(object):
         # now we need to check if the state in forward input is exactly the same!
         if not checkStateActionSeqDatSame(forwardInput.dat, StateActionSeqDat([self.stateActionSeqInDomain.seq[0]])):
             return False
+        
+
+
 
         return True
 
-    def applyForward(self, forwardInput):
+    def applyForward2(self, forwardInputEvent):
+        ensureType(forwardInputEvent, SclEvent)
+
+        forwardInput = forwardInputEvent.payload
+
         ensureType(forwardInput, TypedInst)
 
         print('[trace] SclStateTerminalCheckerRuleFunction.applyForward() ENTER')
@@ -1282,9 +1328,29 @@ class SclStateTerminalCheckerRuleFunction(object):
         # now we execute the actual callback action
         actionName = 'TODO'
         print(f'[act] invoke callback={actionName} ...')
-        actionOperator = self.globalCtx.actionRegistry.lookupByName(actionName)
-        actionOperator.invoke(None, self.globalCtx)
+        #actionOperator = self.globalCtx.actionRegistry.lookupByName(actionName)
+        #actionOperator.invoke(None, self.globalCtx)
         print('[act] ... done')
+
+        # code to enforce/punish chain
+
+        rootChainItem = SclTraceTreeItem(None, None)
+        calcChainsLeadingToEvent(rootChainItem, forwardInputEvent, globalCtx)
+
+        def z(eviPos, chainItem):
+            if chainItem.appliedRule is not None:
+                print(f'reward rule  reward={eviPos}')
+                addEvidence(eviPos, 1.0, chainItem.appliedRule.tv)
+
+
+            # iterate over children of chain-item
+            for iChildren in chainItem.children:
+                z(eviPos, iChildren)
+
+        eviPos = 1.0
+        z(eviPos, rootChainItem)
+
+
 
         # * now we return the answer
         returnedtypedInst = TypedInst(Type('ConseqZ'))
@@ -1634,32 +1700,6 @@ if __name__ == "__main__":
 #    * TODO  add function to pull out a chain which did lead to a event outcome
 
 
-
-
-class SclTraceTreeItem(object):
-    def __init__(self, appliedRule, consequenceEvent):
-        self.appliedRule = appliedRule
-        self.consequenceEvent = consequenceEvent
-
-        self.children = []  # SclTraceTreeItem
-
-
-
-# function to pull out the chains which did lead to a event outcome
-#
-# is used to reward/punish rules so the AI can learn on how to fulfill a given goal
-def calcChainsLeadingToEvent(destTraceTreeItem, event,   globalCtx):
-    for iTraceItem in globalCtx.recorder.trace:
-        premiseEvent, appliedRule, consequenceEvent = iTraceItem
-
-        if consequenceEvent.uniqueId == event.uniqueId: # did we find a connection of the chain?
-
-            # ... then we add it to the datastructure
-            traceTreeItem = SclTraceTreeItem(appliedRule, consequenceEvent)
-            destTraceTreeItem.children.append(traceTreeItem)
-
-            # ... and call recursivly to complete the chain further
-            calcChainsLeadingToEvent(traceTreeItem, premiseEvent,   globalCtx)
 
 
 
