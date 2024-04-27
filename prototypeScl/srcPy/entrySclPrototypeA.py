@@ -638,6 +638,8 @@ class GlobalCtx(object):
         #self.eventManager = SclEventManager()
         self.actionRegistry = SclActionRegistry()
 
+        self.callbackRegistry = SclActionRegistry() # registry for callbacks which do hardcoded stuff
+
         self.recorder = SclRecorder()
 
 
@@ -1195,6 +1197,29 @@ class SclStateActionSeqTransitionRuleFunction(object):
 
 
 
+
+
+
+
+
+class SclCallbackEval0(object):
+    def __init__(self):
+        # TODO LOW  :  call into super-ctor
+
+        pass
+    
+    def invoke(self, consequenceDat, globalCtx):
+        print('[info] SclCallbackEval0 ENTER')
+
+        res = True
+
+        print('[info] SclCallbackEval0 EXIT')
+
+        return res
+
+
+
+
 if False: # code for manual test of forward inference with this SclRule
 
     domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
@@ -1326,10 +1351,10 @@ class SclStateTerminalCheckerRuleFunction(object):
             return None
 
         # now we execute the actual callback action
-        actionName = 'TODO'
+        actionName = 'eval0'
         print(f'[act] invoke callback={actionName} ...')
-        #actionOperator = self.globalCtx.actionRegistry.lookupByName(actionName)
-        #actionOperator.invoke(None, self.globalCtx)
+        actionOperator = self.globalCtx.callbackRegistry.lookupByName(actionName)
+        callbackRes = actionOperator.invoke(None, self.globalCtx)
         print('[act] ... done')
 
         # code to enforce/punish chain
@@ -1347,7 +1372,11 @@ class SclStateTerminalCheckerRuleFunction(object):
             for iChildren in chainItem.children:
                 z(eviPos, iChildren)
 
+        # convert "callbackRes" to actual positive reward
         eviPos = 1.0
+        if not callbackRes:
+            eviPos = 0.0
+        
         z(eviPos, rootChainItem)
 
 
@@ -1412,7 +1441,8 @@ if __name__ == "__main__":
     globalCtx.actionRegistry.actionsByName.append( ('act1', SclActionDummyOperator()) )
 
 
-
+    # register callbacks
+    globalCtx.callbackRegistry.actionsByName.append( ('eval0', SclCallbackEval0()) )
 
 
 
