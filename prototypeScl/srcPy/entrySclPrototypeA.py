@@ -240,28 +240,6 @@ def schedulerTick(scheduler, globalCtx):
                     globalCtx.eventDetectors.put(None, createdEventDetector)
 
 
-            '''
-            # we maintain "TypedInst" which we have to process as 'spikes'. This simplifies resource management and queueing
-            queuedTypedInstSpikes = []
-
-
-            # put all derived "TypedInst" from "inputTypedInsts" into spikes to be processed next
-            for iInputTypedInsts in inputTypedInsts:
-                queuedTypedInstSpikes.append(iInputTypedInsts)
-
-            '''
-
-            '''
-            # * notify eventManager about all 'spikes' in "queuedTypedInstSpikes"
-            for iInputTypedInsts in queuedTypedInstSpikes:
-
-                iInputTypedInstAsEvent = SclEvent(iInputTypedInsts) # wrap TypedInst into event to be processed with eventmanager
-                globalCtx.eventManager.processEvent(iInputTypedInstAsEvent) # process the event
-            '''
-
-            # commented because not necessary
-            #queuedTypedInstSpikes = [] # flush them because we did process the spikes
-
 
         elif selTask['kind'] == 'event': # the job is to process a SclEvent with forward-inference
 
@@ -314,26 +292,6 @@ def schedulerTick(scheduler, globalCtx):
 
 
 
-
-# manual test of the scheduler
-if False:
-    z0 = SclScheduler()
-
-    createdPendingTask = {}
-    createdPendingTask['activeFrom'] = 2.0 # set absolute time when the job will be added as active job
-    z0.pendingInactiveTasks.append(createdPendingTask)
-
-    z0.systemStartAbsoluteTime = time.time()
-
-    while True:
-        # HACKY  :  kill the whole system after it did run for a given time amount
-        if z0.cachedSystemClockTime > 3.0:
-            break
-        
-        schedulerTick(z0)
-
-    # terminate program
-    exit(0)
 
 
 
@@ -413,12 +371,6 @@ class SclRule(object):
     def __eq__(a, b):
         return a.inputType == b.inputType and a.outputType == b.outputType and a.fn == b.fn and a.isStatic == b.isStatic
 
-'''
-    def applyForward(self, forwardInput):
-        ensureType(forwardInput, TypedInst)
-        
-        return self.fn.applyForward(forwardInput)
-'''
 
 
 
@@ -739,109 +691,6 @@ def calcChainsLeadingToEvent(destTraceTreeItem, event,   globalCtx):
 
 
 
-# function of RULE which is used to plan backward from a goal which is expressed as a goal-type to a sub-goal which is expressed as a goal-type
-class PlanningTestARuleFunction(object):
-    def __init__(self):
-        pass
-    
-    def applyForward(self, forwardInput):
-        ensureType(forwardInput, TypedInst)
-
-        # NOTE  we do forward planning - which is the execution of the implemented functionality
-
-        print('[trace] PlanningTestARuleFunction.applyForward() called')
-
-        #  return a actual "TypedInst"
-        outputTypedInst = TypedInst(Type('goalA'))
-        return outputTypedInst
-    
-    def applyBackward(self, backwardOutput):
-        ensureType(backwardOutput, TypedInst)
-
-        if not (backwardOutput.type_.typeName == 'goalA'):
-            raise InterpretationSoftError('must be of type goalA')
-
-        # backward planning from "backwardOutput" to backward-input
-
-        backwardInput = TypedInst(Type('clockTickA'))
-
-        backwardInput.dat = None # TODO  :  put something into the "backwardInput" datum as payload
-
-        return backwardInput
-
-
-
-
-
-
-
-
-
-# function of RULE which is used to generate a random result, this is used to test this architecture if it could handle tools which are unreliable
-class ReliabilityTestBRuleFunction(object):
-    def __init__(self):
-        pass
-    
-    def applyForward(self, forwardInput):
-        ensureType(forwardInput, TypedInst)
-
-        # NOTE  we do forward planning - which is the execution of the implemented functionality
-
-        print('[trace] ReliabilityTestBRuleFunction.applyForward() called')
-
-        #  return a actual "TypedInst"
-        outputTypedInst = TypedInst(Type('failableA'))
-        outputTypedInst.dat = random.randint(0, 2) == 0
-        return outputTypedInst
-    
-    def applyBackward(self, backwardOutput):
-        ensureType(backwardOutput, TypedInst)
-
-        if not (backwardOutput.type_.typeName == 'failableA'):
-            raise InterpretationSoftError('must be of type failableA')
-
-        # backward planning from "backwardOutput" to backward-input
-
-        backwardInput = TypedInst(Type('a0'))
-        backwardInput.dat = None # has no payload for backward planning
-        return backwardInput
-
-# function of RULE which is used to consume SclEvent:failableA and decide how to proceed based on payload. forwardOutput is of type SclEvent:rootGoal
-class FailableConsumerTestBRuleFunction(object):
-    def __init__(self):
-        pass
-    
-    def applyForward(self, forwardInput):
-        ensureType(forwardInput, TypedInst)
-
-        # NOTE  we do forward planning - which is the execution of the implemented functionality
-
-        print('[trace] FailableConsumerTestBRuleFunction.applyForward() called')
-
-        print(f'[info ] payload={forwardInput.dat}')
-
-        failableSucceeded = forwardInput.dat
-        if not failableSucceeded:
-            print('[info ] failable failed!')
-
-            # TODO LOW  :  implement soft-error handling here
-
-        #  return a actual "TypedInst"
-        outputTypedInst = TypedInst(Type('rootGoal'))
-        outputTypedInst.dat = None # no payload
-        return outputTypedInst
-    
-    def applyBackward(self, backwardOutput):
-        ensureType(backwardOutput, TypedInst)
-
-        if not (backwardOutput.type_.typeName == 'rootGoal'):
-            raise InterpretationSoftError('must be of type rootGoal')
-
-        # backward planning from "backwardOutput" to backward-input
-
-        backwardInput = TypedInst(Type('failableA'))
-        backwardInput.dat = None # has no payload for backward planning
-        return backwardInput
 
 
 
@@ -855,41 +704,11 @@ class FailableConsumerTestBRuleFunction(object):
 
 
 
-# function
-#
-# fetches text from a source (in our case the internet)
-class AppRunFetchTextRuleFunction(object):
-    def __init__(self):
-        pass
-    
-    def applyForward(self, forwardInput):
-        ensureType(forwardInput, TypedInst)
-
-        # NOTE  we do forward planning - which is the execution of the implemented functionality
-
-        print('[trace] AppRunFetchTextRuleFunction.applyForward() called')
 
 
-        # TODO TODO TODO TODO
 
-        # * now we return the answer
 
-        #  return a actual "TypedInst"
-        outputTypedInst = TypedInst(Type('a1'))
-        outputTypedInst.dat = {'answerBeginningHumanTxt': forwardInput.dat['answerBeginningHumanTxt']} # data passthrough
-        return outputTypedInst
-    
-    def applyBackward(self, backwardOutput):
-        ensureType(backwardOutput, TypedInst)
 
-        if not (backwardOutput.type_.typeName == 'a1'):
-            raise InterpretationSoftError('must be of type a1')
-
-        # backward planning from "backwardOutput" to backward-input
-
-        backwardInput = TypedInst(Type('a2'))
-        backwardInput.dat = None # has no payload for backward planning
-        return backwardInput
 
 
 
@@ -1114,36 +933,6 @@ class SclCallbackEval0(object):
 
 
 
-if False: # code for manual test of forward inference with this SclRule
-
-    domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
-    codomainDat = StateActionSeqDat(['v1'])
-
-    fn = SclStateActionSeqTransitionRuleFunction(domainDat, codomainDat)
-
-    # manually testing forward planning
-
-    forwardInput = TypedInst(Type('stateActionSeq'))
-    forwardInput.dat = StateActionSeqDat(['v0'])
-
-    forwardOutput = fn.applyForward(forwardInput)
-
-
-if False: # code for manual test of backward inference with this SclRule
-
-    domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
-    codomainDat = StateActionSeqDat(['v1'])
-
-    fn = SclStateActionSeqTransitionRuleFunction(domainDat, codomainDat)
-
-    # manually testing forward planning
-
-    backwardOutput = TypedInst(Type('stateActionSeq'))
-    backwardOutput.dat = StateActionSeqDat(['v1'])
-
-    backwardInput = fn.applyBackward(backwardOutput)
-
-
 
 
 def learnPreconditionActionConsequence(condition, operation, consequence,  globalCtx):
@@ -1312,6 +1101,229 @@ class SclStateTerminalCheckerRuleFunction(object):
 
 
 
+
+
+
+
+
+
+
+##########################################
+##########################################
+##########################################
+# TESTING CODE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# manual test of the scheduler
+if False:
+    z0 = SclScheduler()
+
+    createdPendingTask = {}
+    createdPendingTask['activeFrom'] = 2.0 # set absolute time when the job will be added as active job
+    z0.pendingInactiveTasks.append(createdPendingTask)
+
+    z0.systemStartAbsoluteTime = time.time()
+
+    while True:
+        # HACKY  :  kill the whole system after it did run for a given time amount
+        if z0.cachedSystemClockTime > 3.0:
+            break
+        
+        schedulerTick(z0)
+
+    # terminate program
+    exit(0)
+
+
+
+
+
+if False: # code for manual test of forward inference with this SclRule
+
+    domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
+    codomainDat = StateActionSeqDat(['v1'])
+
+    fn = SclStateActionSeqTransitionRuleFunction(domainDat, codomainDat)
+
+    # manually testing forward planning
+
+    forwardInput = TypedInst(Type('stateActionSeq'))
+    forwardInput.dat = StateActionSeqDat(['v0'])
+
+    forwardOutput = fn.applyForward(forwardInput)
+
+
+if False: # code for manual test of backward inference with this SclRule
+
+    domainDat = StateActionSeqDat(['v0', 'act0', 'v1'])
+    codomainDat = StateActionSeqDat(['v1'])
+
+    fn = SclStateActionSeqTransitionRuleFunction(domainDat, codomainDat)
+
+    # manually testing forward planning
+
+    backwardOutput = TypedInst(Type('stateActionSeq'))
+    backwardOutput.dat = StateActionSeqDat(['v1'])
+
+    backwardInput = fn.applyBackward(backwardOutput)
+
+
+
+
+
+
+
+
+
+
+# function of RULE which is used to generate a random result, this is used to test this architecture if it could handle tools which are unreliable
+class ReliabilityTestBRuleFunction(object):
+    def __init__(self):
+        pass
+    
+    def applyForward(self, forwardInput):
+        ensureType(forwardInput, TypedInst)
+
+        # NOTE  we do forward planning - which is the execution of the implemented functionality
+
+        print('[trace] ReliabilityTestBRuleFunction.applyForward() called')
+
+        #  return a actual "TypedInst"
+        outputTypedInst = TypedInst(Type('failableA'))
+        outputTypedInst.dat = random.randint(0, 2) == 0
+        return outputTypedInst
+    
+    def applyBackward(self, backwardOutput):
+        ensureType(backwardOutput, TypedInst)
+
+        if not (backwardOutput.type_.typeName == 'failableA'):
+            raise InterpretationSoftError('must be of type failableA')
+
+        # backward planning from "backwardOutput" to backward-input
+
+        backwardInput = TypedInst(Type('a0'))
+        backwardInput.dat = None # has no payload for backward planning
+        return backwardInput
+
+# function of RULE which is used to consume SclEvent:failableA and decide how to proceed based on payload. forwardOutput is of type SclEvent:rootGoal
+class FailableConsumerTestBRuleFunction(object):
+    def __init__(self):
+        pass
+    
+    def applyForward(self, forwardInput):
+        ensureType(forwardInput, TypedInst)
+
+        # NOTE  we do forward planning - which is the execution of the implemented functionality
+
+        print('[trace] FailableConsumerTestBRuleFunction.applyForward() called')
+
+        print(f'[info ] payload={forwardInput.dat}')
+
+        failableSucceeded = forwardInput.dat
+        if not failableSucceeded:
+            print('[info ] failable failed!')
+
+            # TODO LOW  :  implement soft-error handling here
+
+        #  return a actual "TypedInst"
+        outputTypedInst = TypedInst(Type('rootGoal'))
+        outputTypedInst.dat = None # no payload
+        return outputTypedInst
+    
+    def applyBackward(self, backwardOutput):
+        ensureType(backwardOutput, TypedInst)
+
+        if not (backwardOutput.type_.typeName == 'rootGoal'):
+            raise InterpretationSoftError('must be of type rootGoal')
+
+        # backward planning from "backwardOutput" to backward-input
+
+        backwardInput = TypedInst(Type('failableA'))
+        backwardInput.dat = None # has no payload for backward planning
+        return backwardInput
+
+
+
+# function of RULE which is used to plan backward from a goal which is expressed as a goal-type to a sub-goal which is expressed as a goal-type
+class PlanningTestARuleFunction(object):
+    def __init__(self):
+        pass
+    
+    def applyForward(self, forwardInput):
+        ensureType(forwardInput, TypedInst)
+
+        # NOTE  we do forward planning - which is the execution of the implemented functionality
+
+        print('[trace] PlanningTestARuleFunction.applyForward() called')
+
+        #  return a actual "TypedInst"
+        outputTypedInst = TypedInst(Type('goalA'))
+        return outputTypedInst
+    
+    def applyBackward(self, backwardOutput):
+        ensureType(backwardOutput, TypedInst)
+
+        if not (backwardOutput.type_.typeName == 'goalA'):
+            raise InterpretationSoftError('must be of type goalA')
+
+        # backward planning from "backwardOutput" to backward-input
+
+        backwardInput = TypedInst(Type('clockTickA'))
+
+        backwardInput.dat = None # TODO  :  put something into the "backwardInput" datum as payload
+
+        return backwardInput
+
+
+# function
+#
+# fetches text from a source (in our case the internet)
+class AppRunFetchTextRuleFunction(object):
+    def __init__(self):
+        pass
+    
+    def applyForward(self, forwardInput):
+        ensureType(forwardInput, TypedInst)
+
+        # NOTE  we do forward planning - which is the execution of the implemented functionality
+
+        print('[trace] AppRunFetchTextRuleFunction.applyForward() called')
+
+
+        # TODO TODO TODO TODO
+
+        # * now we return the answer
+
+        #  return a actual "TypedInst"
+        outputTypedInst = TypedInst(Type('a1'))
+        outputTypedInst.dat = {'answerBeginningHumanTxt': forwardInput.dat['answerBeginningHumanTxt']} # data passthrough
+        return outputTypedInst
+    
+    def applyBackward(self, backwardOutput):
+        ensureType(backwardOutput, TypedInst)
+
+        if not (backwardOutput.type_.typeName == 'a1'):
+            raise InterpretationSoftError('must be of type a1')
+
+        # backward planning from "backwardOutput" to backward-input
+
+        backwardInput = TypedInst(Type('a2'))
+        backwardInput.dat = None # has no payload for backward planning
+        return backwardInput
 
 # MANUAL TEST for application of rule
 if __name__ == "__main__":
@@ -1674,10 +1686,3 @@ def rewardJob(jobDat, reward):
 
 ################## STAGING AREA (things to add soon)
 
-
-
-
-
-
-
-# TODO< use deduction in reasoning! >
