@@ -43,6 +43,9 @@ def retConf(tv):
 def retFreq(tv):
     return tv.eviPos / tv.evi
 
+def calcExp(tv):
+    return retConf(tv) * (retFreq(tv) - 0.5) + 0.5
+
 def addEvidence(ratioPos, eviAmount, tv):
     tv.eviPos += (ratioPos*eviAmount)
     tv.evi += eviAmount
@@ -264,41 +267,43 @@ def schedulerTick(scheduler, globalCtx):
 
             eventToProcess = selTask['val'] # the event to get processed is the value which is hold by the job
 
-            # notify event manager that the event is handled
-            # (commented because not used yet)
-            #globalCtx.eventManager.processEvent(eventToProcess)
+            if calcExp(eventToProcess.tv) > globalCtx.decisionThreshold: # basic decision making
 
-            #conclusionTypedInsts = []
+                # notify event manager that the event is handled
+                # (commented because not used yet)
+                #globalCtx.eventManager.processEvent(eventToProcess)
 
-            # process the event
-            for iEventDetector in globalCtx.eventDetectors.retAllItems():
-                if not iEventDetector.wasUsed and iEventDetector.checkPatternMatch(eventToProcess): # check if event matches to pattern of the actual detector
-                    
-                    # ( we collect derived events from the forward process )
-                    inputTypedInst = eventToProcess.payload
+                #conclusionTypedInsts = []
 
-                    reactionEvent = None
+                # process the event
+                for iEventDetector in globalCtx.eventDetectors.retAllItems():
+                    if not iEventDetector.wasUsed and iEventDetector.checkPatternMatch(eventToProcess): # check if event matches to pattern of the actual detector
+                        
+                        # ( we collect derived events from the forward process )
+                        inputTypedInst = eventToProcess.payload
 
-                    ###conclusionTypedInstsThis = iEventDetector.rule.applyForward(inputTypedInst)
-                    conclusionTypedInstsThis = iEventDetector.rule.applyForward2(eventToProcess)
-                    if conclusionTypedInstsThis is not None:
-                        conclTv = tvDedDeclarative(iEventDetector.rule.tv, eventToProcess.tv, 1.0)
+                        reactionEvent = None
 
-                        #conclusionTypedInsts += [conclusionTypedInstsThis]
+                        ###conclusionTypedInstsThis = iEventDetector.rule.applyForward(inputTypedInst)
+                        conclusionTypedInstsThis = iEventDetector.rule.applyForward2(eventToProcess)
+                        if conclusionTypedInstsThis is not None:
+                            conclTv = tvDedDeclarative(iEventDetector.rule.tv, eventToProcess.tv, 1.0)
 
-                        createdPendingTask = {}
-                        createdPendingTask['activeFrom'] = 0.0  # set absolute time when the job will be added as active job
-                        createdPendingTask['kind'] = 'event'  # job is to process a event with forward-inference
-                        reactionEvent = SclEvent(conclusionTypedInstsThis, globalCtx.retUniqueEventId(), conclTv)
-                        createdPendingTask['val'] = reactionEvent  # actual job is to process the event with forward inference
-                        globalCtx.scheduler.pendingInactiveTasks.append(createdPendingTask)
+                            #conclusionTypedInsts += [conclusionTypedInstsThis]
 
-                    # label the detector as used
-                    iEventDetector.wasUsed = True
-                    # TODO LOW  :  purge used event detectors in regular intervals
+                            createdPendingTask = {}
+                            createdPendingTask['activeFrom'] = 0.0  # set absolute time when the job will be added as active job
+                            createdPendingTask['kind'] = 'event'  # job is to process a event with forward-inference
+                            reactionEvent = SclEvent(conclusionTypedInstsThis, globalCtx.retUniqueEventId(), conclTv)
+                            createdPendingTask['val'] = reactionEvent  # actual job is to process the event with forward inference
+                            globalCtx.scheduler.pendingInactiveTasks.append(createdPendingTask)
 
-                    # log the applied rules
-                    globalCtx.recorder.putTrace(eventToProcess, iEventDetector.rule, reactionEvent)
+                        # label the detector as used
+                        iEventDetector.wasUsed = True
+                        # TODO LOW  :  purge used event detectors in regular intervals
+
+                        # log the applied rules
+                        globalCtx.recorder.putTrace(eventToProcess, iEventDetector.rule, reactionEvent)
 
 
             
@@ -646,6 +651,8 @@ class GlobalCtx(object):
         self.callbackRegistry = SclActionRegistry() # registry for callbacks which do hardcoded stuff
 
         self.recorder = SclRecorder()
+
+        self.decisionThreshold = 0.501 # decision threshold similar to NARS
 
 
         # set of 'SclEventDetector's for which the system is looking for.
@@ -1601,6 +1608,7 @@ if __name__ == "__main__":
 
 
 
+
 # HALFDONE  :  implement some triggering mechanism with a hashtable by type of the event where forward inference is only done if it occurs in the table
 #    TODO  :  the table has to be maintained under AIKR!
 #        TODO  :  call into maintaining of table every X seconds
@@ -1609,13 +1617,13 @@ if __name__ == "__main__":
 
 
 
-# TODO
+# HALFDONE
 # * implement checking if the goal state has been reached (return is true/false)
 # * implement rewarding/punishment with use of TV of the chain which lead to the result (for that we have to trace all forward applied rules)
 #    * DONE  track id of SclEvent
 #    * DONE  add SclTracker to track events which ahppened and applied forward inferences which happened, so that we are able to reward/punish the chain which did lead to a given event
-#    * TODO  add function to pull out a chain which did lead to a event outcome
-
+#    * HALFDONE  add function to pull out a chain which did lead to a event outcome
+#          possible bug: do we connect between events correctly while tracing back the chain?
 
 
 
